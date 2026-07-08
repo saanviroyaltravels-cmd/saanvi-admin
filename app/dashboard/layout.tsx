@@ -56,15 +56,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="flex min-h-screen" style={{ background: 'var(--background)' }}>
+    <div className="flex min-h-screen" style={{ background: 'var(--background)', overflow: 'hidden' }}>
       {/* Mobile overlay */}
       {sidebarOpen && <div className="fixed inset-0 bg-black/50 z-20 lg:hidden" onClick={() => setSidebarOpen(false)} />}
 
-      {/* Sidebar */}
+      {/* Sidebar — fixed, always 260px on desktop, hidden on mobile */}
       <aside className={cn(
         'fixed top-0 left-0 h-full z-30 flex flex-col transition-transform duration-300',
-        'lg:translate-x-0',
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full',
+        'lg:translate-x-0'
       )} style={{ width: '260px', background: 'var(--card)', borderRight: '1px solid var(--border)' }}>
 
         {/* Logo */}
@@ -101,43 +101,50 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
-      {/* Main */}
-      <div className="flex-1 flex flex-col min-h-screen" style={{ marginLeft: '0', paddingLeft: '0' }}>
-        <div className="lg:ml-[260px]">
-          {/* Header */}
-          <header className="sticky top-0 z-10 flex items-center gap-3 px-4 md:px-6 py-3 border-b" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
-            <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 rounded-lg hover:bg-muted" style={{ color: 'var(--muted-foreground)' }}>
-              <Menu size={20} />
-            </button>
+      {/* Main content — offset by sidebar width on desktop */}
+      <div className="main-content flex flex-col min-h-screen">
 
-            {/* Page title */}
-            <div className="flex-1">
-              <p className="font-semibold text-sm" style={{ color: 'var(--foreground)' }}>
-                {navItems.find(n => n.href === pathname)?.label || 'Dashboard'}
-              </p>
-            </div>
+        {/* Sticky Header */}
+        <header className="sticky top-0 z-10 flex items-center gap-3 px-4 md:px-6 py-3 border-b"
+          style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
 
-            <button onClick={toggleDark} className="p-2 rounded-lg hover:bg-muted transition" style={{ color: 'var(--muted-foreground)' }}>
-              {dark ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
+          {/* Hamburger — mobile only */}
+          <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 rounded-lg"
+            style={{ color: 'var(--muted-foreground)' }}>
+            <Menu size={20} />
+          </button>
 
-            {/* User avatar */}
-            {user && (
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-orange-500 flex items-center justify-center text-white text-xs font-bold">
-                  {user.name[0].toUpperCase()}
-                </div>
-                <div className="hidden md:block text-right">
-                  <p className="text-xs font-semibold" style={{ color: 'var(--foreground)' }}>{user.name}</p>
-                  <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Admin</p>
-                </div>
+          {/* Page title */}
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-sm truncate" style={{ color: 'var(--foreground)' }}>
+              {navItems.find(n => n.href === pathname)?.label || 'Dashboard'}
+            </p>
+          </div>
+
+          {/* Dark mode toggle */}
+          <button onClick={toggleDark} className="p-2 rounded-lg transition"
+            style={{ color: 'var(--muted-foreground)' }}>
+            {dark ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+
+          {/* User avatar */}
+          {user && (
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-orange-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                {user.name[0].toUpperCase()}
               </div>
-            )}
-          </header>
+              <div className="hidden md:block text-right">
+                <p className="text-xs font-semibold" style={{ color: 'var(--foreground)' }}>{user.name}</p>
+                <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Admin</p>
+              </div>
+            </div>
+          )}
+        </header>
 
-          {/* Content */}
-          <main className="p-4 md:p-6 fade-in">{children}</main>
-        </div>
+        {/* Page content */}
+        <main className="flex-1 p-4 md:p-6 fade-in" style={{ minWidth: 0, overflowX: 'hidden' }}>
+          {children}
+        </main>
       </div>
     </div>
   )

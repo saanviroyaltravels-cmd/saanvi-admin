@@ -1,5 +1,18 @@
 @import "tailwindcss";
 
+/* ===== LAYOUT: Sidebar + Main Content ===== */
+.main-content {
+  margin-left: 0;
+  min-width: 0;
+  width: 100%;
+  overflow-x: hidden;
+}
+@media (min-width: 1024px) {
+  .main-content {
+    margin-left: 260px;
+  }
+}
+
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
