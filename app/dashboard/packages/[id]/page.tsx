@@ -105,9 +105,9 @@ export default function PackageFormPage() {
         pickup_point:      d.pickup_point      || '',
         short_description: d.short_description || '',
         full_description:  d.full_description  || '',
-        itinerary:         d.itinerary         || '',
-        inclusions:        d.inclusions        || '',
-        exclusions:        d.exclusions        || '',
+        itinerary:         Array.isArray(d.itinerary) ? d.itinerary.join('\n') : (d.itinerary || ''),
+        inclusions:        Array.isArray(d.inclusions) ? d.inclusions.join('\n') : (d.inclusions || ''),
+        exclusions:        Array.isArray(d.exclusions) ? d.exclusions.join('\n') : (d.exclusions || ''),
         terms_conditions:  d.terms_conditions  || '',
         cover_image:       d.cover_image       || '',
         gallery:           Array.isArray(d.gallery) ? d.gallery : [],
@@ -149,9 +149,9 @@ export default function PackageFormPage() {
       pickup_point:      form.pickup_point,
       short_description: form.short_description,
       full_description:  form.full_description,
-      itinerary:         form.itinerary,
-      inclusions:        form.inclusions,
-      exclusions:        form.exclusions,
+      itinerary:         form.itinerary.split('\n').map(s => s.trim()).filter(Boolean),
+      inclusions:        form.inclusions.split('\n').map(s => s.trim()).filter(Boolean),
+      exclusions:        form.exclusions.split('\n').map(s => s.trim()).filter(Boolean),
       terms_conditions:  form.terms_conditions,
       cover_image:       form.cover_image,
       gallery:           form.gallery,
@@ -164,16 +164,34 @@ export default function PackageFormPage() {
       sort_order:        Number(form.sort_order) || 0,
     }
 
-    const { error } = isNew
-      ? await supabase.from('packages').insert(payload)
-      : await supabase.from('packages').update(payload).eq('id', params.id)
+    console.log('--- PACKAGE UPDATE START ---')
+    console.log('packageId (params.id):', params.id)
+    console.log('Payload:', payload)
 
-    if (error) toast.error(error.message)
-    else {
-      toast.success(isNew ? 'Package created!' : 'Package updated!')
-      router.push('/dashboard/packages')
+    try {
+      if (isNew) {
+        const { data, error } = await supabase.from('packages').insert(payload).select()
+        console.log('Supabase Insert Response:', { data, error })
+        if (error) throw error
+        toast.success('Package created!')
+        router.push('/dashboard/packages')
+      } else {
+        const { data, error } = await supabase.from('packages').update(payload).eq('id', params.id).select()
+        console.log('Supabase Update Response:', { data, error })
+        
+        if (error) throw error
+        if (!data || data.length === 0) {
+          throw new Error('Update failed: 0 rows modified. Check if ID exists or RLS policy blocked UPDATE.')
+        }
+        
+        toast.success('Package updated successfully!')
+      }
+    } catch (err: any) {
+      console.error('Save error:', err)
+      toast.error(err.message || 'Unknown error occurred')
+    } finally {
+      setSaving(false)
     }
-    setSaving(false)
   }
 
   if (loading) return (
