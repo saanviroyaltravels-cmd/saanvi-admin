@@ -3,8 +3,9 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useParams } from 'next/navigation'
 import { toast } from 'sonner'
-import { ArrowLeft, Save, Upload } from 'lucide-react'
+import { ArrowLeft, Save } from 'lucide-react'
 import Link from 'next/link'
+import { SingleImageUploader, GalleryImageUploader } from '@/components/ImageUploader'
 
 const VEHICLE_TYPES = ['Innova', 'Innova Crysta', 'Ertiga', 'Traveller', 'Bus', 'Sedan', 'SUV']
 const DESTINATIONS = ['Ayodhya', 'Varanasi', 'Bodh Gaya', 'Prayagraj', 'Rajgir', 'Nalanda', 'Patna', 'Lucknow', 'Gorakhpur', 'Kathmandu', 'Ujjain', 'Shirdi']
@@ -21,7 +22,7 @@ export default function PackageFormPage() {
     travel_date: '', return_date: '', duration: '', price: '',
     discount_price: '', seats: '', vehicle_type: 'Innova',
     hotel_included: false, meals_included: false,
-    includes: '', excludes: '', image: '', gallery: '',
+    includes: '', excludes: '', image: '', gallery: [] as string[],
     is_active: true, featured: false, popular: false
   })
 
@@ -32,7 +33,7 @@ export default function PackageFormPage() {
   async function loadPackage() {
     setLoading(true)
     const { data } = await supabase.from('packages').select('*').eq('id', params.id).single()
-    if (data) setForm({ ...data, includes: data.includes || '', excludes: data.excludes || '', gallery: Array.isArray(data.gallery) ? data.gallery.join(', ') : data.gallery || '' })
+    if (data) setForm({ ...data, includes: data.includes || '', excludes: data.excludes || '', image: data.image || '', gallery: Array.isArray(data.gallery) ? data.gallery : [] })
     setLoading(false)
   }
 
@@ -46,7 +47,7 @@ export default function PackageFormPage() {
       price: Number(form.price),
       discount_price: form.discount_price ? Number(form.discount_price) : null,
       seats: form.seats ? Number(form.seats) : null,
-      gallery: form.gallery ? form.gallery.split(',').map((s: string) => s.trim()) : [],
+      gallery: form.gallery,
     }
     const { error } = isNew
       ? await supabase.from('packages').insert(payload)
@@ -122,10 +123,22 @@ export default function PackageFormPage() {
         </div>
 
         {/* Images */}
-        <div className="card space-y-4">
+        <div className="card space-y-6">
           <h2 className="font-bold" style={{ color: 'var(--foreground)' }}>Images</h2>
-          <div><label>Main Image URL</label><input value={form.image} onChange={e => set('image', e.target.value)} placeholder="https://..." /></div>
-          <div><label>Gallery Images (comma separated URLs)</label><textarea rows={2} value={form.gallery} onChange={e => set('gallery', e.target.value)} placeholder="https://img1.jpg, https://img2.jpg" /></div>
+          <SingleImageUploader
+            value={form.image}
+            onChange={url => set('image', url)}
+            bucket="package-images"
+            folder="main"
+            label="Main Package Image"
+          />
+          <GalleryImageUploader
+            value={form.gallery}
+            onChange={urls => set('gallery', urls)}
+            bucket="package-images"
+            folder="gallery"
+            maxImages={10}
+          />
         </div>
 
         {/* Status */}
