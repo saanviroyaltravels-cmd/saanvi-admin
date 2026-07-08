@@ -16,7 +16,7 @@ export default function PackagesPage() {
   useEffect(() => { loadPackages() }, [])
 
   async function loadPackages() {
-    const { data } = await supabase.from('packages').select('*').order('created_at', { ascending: false })
+    const { data } = await supabase.from('packages').select('id, title, slug, destination_name, cover_image, price, offer_price, duration, is_active, featured, created_at').order('created_at', { ascending: false })
     setPackages(data || [])
     setLoading(false)
   }
@@ -42,7 +42,7 @@ export default function PackagesPage() {
 
   async function duplicatePackage(pkg: any) {
     const { id, created_at, updated_at, ...rest } = pkg
-    const { error } = await supabase.from('packages').insert({ ...rest, title: rest.title + ' (Copy)', is_active: false })
+    const { error } = await supabase.from('packages').insert({ ...rest, title: rest.title + ' (Copy)', slug: (rest.slug || rest.title).toLowerCase() + '-copy', is_active: false })
     if (error) toast.error(error.message)
     else { toast.success('Package duplicated'); loadPackages() }
   }
@@ -101,7 +101,7 @@ export default function PackagesPage() {
                     <td>
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0">
-                          {pkg.image ? <img src={pkg.image} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-lg">🏛️</div>}
+                          {pkg.cover_image ? <img src={pkg.cover_image} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-lg">🏛️</div>}
                         </div>
                         <div>
                           <p className="font-semibold text-sm flex items-center gap-1">
@@ -115,7 +115,7 @@ export default function PackagesPage() {
                     <td className="text-sm">{pkg.destination_name || pkg.destination_id}</td>
                     <td>
                       <p className="font-semibold text-sm">{formatCurrency(pkg.price || 0)}</p>
-                      {pkg.discount_price && <p className="text-xs line-through" style={{ color: 'var(--muted-foreground)' }}>{formatCurrency(pkg.discount_price)}</p>}
+                      {pkg.offer_price && <p className="text-xs line-through" style={{ color: 'var(--muted-foreground)' }}>{formatCurrency(pkg.offer_price)}</p>}
                     </td>
                     <td className="text-sm">{pkg.duration || '—'}</td>
                     <td>

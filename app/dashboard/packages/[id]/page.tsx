@@ -13,43 +13,49 @@ const DESTINATIONS = [
   'Patna', 'Lucknow', 'Gorakhpur', 'Kathmandu', 'Ujjain', 'Shirdi'
 ]
 
-// ── Only the columns that actually exist in the packages table ─────────────────
+// Matches the new Supabase schema exactly
 interface PackageForm {
   title: string
+  slug: string
   destination_id: string | null
   destination_name: string
-  route: string
+  category: string
+  duration: string
+  duration_days: string | number
+  duration_nights: string | number
+  price: string | number
+  offer_price: string | number
+  discount_percent: string | number
+  max_seats: string | number
+  available_seats: string | number
+  vehicle_type_id: string | null
   pickup_point: string
   short_description: string
   full_description: string
-  travel_date: string
-  return_date: string
-  duration: string
-  price: string
-  discount_price: string
-  seats: string
-  vehicle_type: string
-  hotel_included: boolean
-  meals_included: boolean
-  includes: string
-  excludes: string
-  image: string
+  itinerary: string
+  inclusions: string
+  exclusions: string
+  terms_conditions: string
+  cover_image: string
   gallery: string[]
-  is_active: boolean
   featured: boolean
-  popular: boolean
+  is_active: boolean
+  booking_open: boolean
+  meta_title: string
+  meta_description: string
+  meta_keywords: string
+  sort_order: string | number
 }
 
 const EMPTY: PackageForm = {
-  title: '', destination_id: null, destination_name: '', route: '', pickup_point: '',
-  short_description: '', full_description: '',
-  travel_date: '', return_date: '', duration: '',
-  price: '', discount_price: '', seats: '',
-  vehicle_type: 'Innova',
-  hotel_included: false, meals_included: false,
-  includes: '', excludes: '',
-  image: '', gallery: [],
-  is_active: true, featured: false, popular: false,
+  title: '', slug: '', destination_id: null, destination_name: '', category: 'Tour',
+  duration: '', duration_days: 1, duration_nights: 0,
+  price: '', offer_price: '', discount_percent: 0,
+  max_seats: 10, available_seats: 10, vehicle_type_id: null, pickup_point: '',
+  short_description: '', full_description: '', itinerary: '', inclusions: '', exclusions: '', terms_conditions: '',
+  cover_image: '', gallery: [],
+  featured: false, is_active: true, booking_open: true,
+  meta_title: '', meta_description: '', meta_keywords: '', sort_order: 0
 }
 
 export default function PackageFormPage() {
@@ -68,16 +74,12 @@ export default function PackageFormPage() {
     setLoading(true)
     const { data, error } = await supabase
       .from('packages')
-      .select([
-        'title', 'destination_id', 'destination_name', 'route', 'pickup_point',
-        'short_description', 'full_description',
-        'travel_date', 'return_date', 'duration',
-        'price', 'discount_price', 'seats', 'vehicle_type',
-        'hotel_included', 'meals_included',
-        'includes', 'excludes',
-        'image', 'gallery',
-        'is_active', 'featured', 'popular',
-      ].join(','))
+      .select(`
+        title, slug, destination_id, destination_name, category, duration, duration_days, duration_nights,
+        price, offer_price, discount_percent, max_seats, available_seats, vehicle_type_id, pickup_point,
+        short_description, full_description, itinerary, inclusions, exclusions, terms_conditions,
+        cover_image, gallery, featured, is_active, booking_open, meta_title, meta_description, meta_keywords, sort_order
+      `)
       .eq('id', params.id)
       .single()
 
@@ -87,28 +89,35 @@ export default function PackageFormPage() {
       const d = data as any
       setForm({
         title:             d.title             || '',
+        slug:              d.slug              || '',
         destination_id:    d.destination_id    || null,
         destination_name:  d.destination_name  || '',
-        route:             d.route             || '',
+        category:          d.category          || 'Tour',
+        duration:          d.duration          || '',
+        duration_days:     d.duration_days     || 1,
+        duration_nights:   d.duration_nights   || 0,
+        price:             d.price             ?? '',
+        offer_price:       d.offer_price       ?? '',
+        discount_percent:  d.discount_percent  ?? 0,
+        max_seats:         d.max_seats         ?? 10,
+        available_seats:   d.available_seats   ?? 10,
+        vehicle_type_id:   d.vehicle_type_id   || null,
         pickup_point:      d.pickup_point      || '',
         short_description: d.short_description || '',
         full_description:  d.full_description  || '',
-        travel_date:       d.travel_date       || '',
-        return_date:       d.return_date       || '',
-        duration:          d.duration          || '',
-        price:             String(d.price      ?? ''),
-        discount_price:    String(d.discount_price ?? ''),
-        seats:             String(d.seats      ?? ''),
-        vehicle_type:      d.vehicle_type      || 'Innova',
-        hotel_included:    d.hotel_included    ?? false,
-        meals_included:    d.meals_included    ?? false,
-        includes:          d.includes          || '',
-        excludes:          d.excludes          || '',
-        image:             d.image             || '',
+        itinerary:         d.itinerary         || '',
+        inclusions:        d.inclusions        || '',
+        exclusions:        d.exclusions        || '',
+        terms_conditions:  d.terms_conditions  || '',
+        cover_image:       d.cover_image       || '',
         gallery:           Array.isArray(d.gallery) ? d.gallery : [],
-        is_active:         d.is_active         ?? true,
         featured:          d.featured          ?? false,
-        popular:           d.popular           ?? false,
+        is_active:         d.is_active         ?? true,
+        booking_open:      d.booking_open      ?? true,
+        meta_title:        d.meta_title        || '',
+        meta_description:  d.meta_description  || '',
+        meta_keywords:     d.meta_keywords     || '',
+        sort_order:        d.sort_order        ?? 0,
       })
     }
     setLoading(false)
@@ -121,31 +130,38 @@ export default function PackageFormPage() {
     e.preventDefault()
     setSaving(true)
 
-    // ── Explicit payload — only known DB columns, no spread of raw DB data ──
+    // Explicit payload mapping to exactly match the database schema
     const payload = {
       title:             form.title,
+      slug:              form.slug || form.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
       destination_id:    form.destination_id,
       destination_name:  form.destination_name,
-      route:             form.route,
+      category:          form.category,
+      duration:          form.duration,
+      duration_days:     Number(form.duration_days) || 0,
+      duration_nights:   Number(form.duration_nights) || 0,
+      price:             Number(form.price) || 0,
+      offer_price:       form.offer_price ? Number(form.offer_price) : null,
+      discount_percent:  Number(form.discount_percent) || 0,
+      max_seats:         Number(form.max_seats) || 0,
+      available_seats:   Number(form.available_seats) || 0,
+      vehicle_type_id:   form.vehicle_type_id,
       pickup_point:      form.pickup_point,
       short_description: form.short_description,
       full_description:  form.full_description,
-      travel_date:       form.travel_date       || null,
-      return_date:       form.return_date       || null,
-      duration:          form.duration,
-      price:             Number(form.price),
-      discount_price:    form.discount_price ? Number(form.discount_price) : null,
-      seats:             form.seats ? Number(form.seats) : null,
-      vehicle_type:      form.vehicle_type,
-      hotel_included:    form.hotel_included,
-      meals_included:    form.meals_included,
-      includes:          form.includes,
-      excludes:          form.excludes,
-      image:             form.image,
+      itinerary:         form.itinerary,
+      inclusions:        form.inclusions,
+      exclusions:        form.exclusions,
+      terms_conditions:  form.terms_conditions,
+      cover_image:       form.cover_image,
       gallery:           form.gallery,
-      is_active:         form.is_active,
       featured:          form.featured,
-      popular:           form.popular,
+      is_active:         form.is_active,
+      booking_open:      form.booking_open,
+      meta_title:        form.meta_title,
+      meta_description:  form.meta_description,
+      meta_keywords:     form.meta_keywords,
+      sort_order:        Number(form.sort_order) || 0,
     }
 
     const { error } = isNew
@@ -185,11 +201,15 @@ export default function PackageFormPage() {
         {/* Basic Info */}
         <div className="card space-y-4">
           <h2 className="font-bold" style={{ color: 'var(--foreground)' }}>Basic Information</h2>
+          
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <label>Package Name *</label>
-              <input value={form.title} onChange={e => set('title', e.target.value)}
-                required placeholder="Ayodhya Darshan Package" />
+              <label>Package Title *</label>
+              <input value={form.title} onChange={e => set('title', e.target.value)} required placeholder="Ayodhya Darshan Package" />
+            </div>
+            <div>
+              <label>URL Slug</label>
+              <input value={form.slug} onChange={e => set('slug', e.target.value)} placeholder="ayodhya-darshan-package" />
             </div>
             <div>
               <label>Destination Name *</label>
@@ -199,107 +219,108 @@ export default function PackageFormPage() {
               </select>
             </div>
             <div>
-              <label>Route</label>
-              <input value={form.route} onChange={e => set('route', e.target.value)}
-                placeholder="Siwan → Ayodhya → Siwan" />
+              <label>Category</label>
+              <select value={form.category} onChange={e => set('category', e.target.value)}>
+                <option>Tour</option>
+                <option>Cab</option>
+                <option>Hotel</option>
+                <option>Activity</option>
+              </select>
             </div>
             <div>
               <label>Pickup Point</label>
-              <input value={form.pickup_point} onChange={e => set('pickup_point', e.target.value)}
-                placeholder="Siwan Bus Stand" />
+              <input value={form.pickup_point} onChange={e => set('pickup_point', e.target.value)} placeholder="Siwan Bus Stand" />
             </div>
             <div>
-              <label>Travel Date</label>
-              <input type="date" value={form.travel_date} onChange={e => set('travel_date', e.target.value)} />
+              <label>Duration Text</label>
+              <input value={form.duration} onChange={e => set('duration', e.target.value)} placeholder="2 Days 1 Night" />
             </div>
-            <div>
-              <label>Return Date</label>
-              <input type="date" value={form.return_date} onChange={e => set('return_date', e.target.value)} />
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label>Days</label>
+                <input type="number" value={form.duration_days} onChange={e => set('duration_days', e.target.value)} />
+              </div>
+              <div>
+                <label>Nights</label>
+                <input type="number" value={form.duration_nights} onChange={e => set('duration_nights', e.target.value)} />
+              </div>
             </div>
-            <div>
-              <label>Duration</label>
-              <input value={form.duration} onChange={e => set('duration', e.target.value)}
-                placeholder="2 Days 1 Night" />
-            </div>
-            <div>
-              <label>Seats Available</label>
-              <input type="number" value={form.seats} onChange={e => set('seats', e.target.value)}
-                placeholder="20" />
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label>Max Seats</label>
+                <input type="number" value={form.max_seats} onChange={e => set('max_seats', e.target.value)} />
+              </div>
+              <div>
+                <label>Available Seats</label>
+                <input type="number" value={form.available_seats} onChange={e => set('available_seats', e.target.value)} />
+              </div>
             </div>
           </div>
+
           <div>
-            <label>
-              Short Description{' '}
-              <span style={{ color: 'var(--muted-foreground)', fontWeight: 400 }}>
-                (shown on package card)
-              </span>
-            </label>
-            <textarea rows={2} value={form.short_description}
-              onChange={e => set('short_description', e.target.value)}
-              placeholder="Brief summary shown on listing page, e.g. 2 Days Ayodhya Darshan with hotel & meals..." />
+            <label>Short Description (shown on cards)</label>
+            <textarea rows={2} value={form.short_description} onChange={e => set('short_description', e.target.value)} placeholder="Brief summary shown on listing page..." />
           </div>
           <div>
-            <label>
-              Full Description{' '}
-              <span style={{ color: 'var(--muted-foreground)', fontWeight: 400 }}>
-                (shown on package detail page)
-              </span>
-            </label>
-            <textarea rows={5} value={form.full_description}
-              onChange={e => set('full_description', e.target.value)}
-              placeholder="Detailed itinerary, highlights, important notes..." />
+            <label>Full Description (shown on details page)</label>
+            <textarea rows={5} value={form.full_description} onChange={e => set('full_description', e.target.value)} placeholder="Detailed overview..." />
+          </div>
+          <div>
+            <label>Itinerary (Day by Day)</label>
+            <textarea rows={5} value={form.itinerary} onChange={e => set('itinerary', e.target.value)} placeholder="Day 1: Arrival...&#10;Day 2: Sightseeing..." />
           </div>
         </div>
 
-        {/* Pricing */}
+        {/* Pricing & Offers */}
         <div className="card space-y-4">
-          <h2 className="font-bold" style={{ color: 'var(--foreground)' }}>Pricing</h2>
+          <h2 className="font-bold" style={{ color: 'var(--foreground)' }}>Pricing & Availability</h2>
           <div className="grid md:grid-cols-3 gap-4">
             <div>
-              <label>Price (₹) *</label>
-              <input type="number" value={form.price} onChange={e => set('price', e.target.value)}
-                required placeholder="2999" />
+              <label>Regular Price (₹) *</label>
+              <input type="number" value={form.price} onChange={e => set('price', e.target.value)} required placeholder="2999" />
             </div>
             <div>
-              <label>Discount / Strike Price (₹)</label>
-              <input type="number" value={form.discount_price}
-                onChange={e => set('discount_price', e.target.value)} placeholder="2499" />
+              <label>Offer Price (₹)</label>
+              <input type="number" value={form.offer_price} onChange={e => set('offer_price', e.target.value)} placeholder="2499" />
             </div>
             <div>
-              <label>Vehicle Type</label>
-              <select value={form.vehicle_type} onChange={e => set('vehicle_type', e.target.value)}>
-                {VEHICLE_TYPES.map(v => <option key={v}>{v}</option>)}
-              </select>
+              <label>Discount Percent (%)</label>
+              <input type="number" value={form.discount_percent} onChange={e => set('discount_percent', e.target.value)} placeholder="15" />
             </div>
           </div>
         </div>
 
-        {/* Inclusions */}
+        {/* Inclusions & Terms */}
         <div className="card space-y-4">
           <h2 className="font-bold" style={{ color: 'var(--foreground)' }}>Inclusions & Exclusions</h2>
-          <div className="flex flex-wrap gap-6">
-            <label className="flex items-center gap-2 cursor-pointer" style={{ margin: 0 }}>
-              <input type="checkbox" checked={form.hotel_included}
-                onChange={e => set('hotel_included', e.target.checked)}
-                style={{ width: '18px', height: '18px' }} />
-              <span className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>Hotel Included</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer" style={{ margin: 0 }}>
-              <input type="checkbox" checked={form.meals_included}
-                onChange={e => set('meals_included', e.target.checked)}
-                style={{ width: '18px', height: '18px' }} />
-              <span className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>Meals Included</span>
-            </label>
+          <div>
+            <label>Package Inclusions</label>
+            <textarea rows={4} value={form.inclusions} onChange={e => set('inclusions', e.target.value)} placeholder={'AC Transport\nHotel stay\nBreakfast'} />
           </div>
           <div>
-            <label>Package Includes (one per line)</label>
-            <textarea rows={4} value={form.includes} onChange={e => set('includes', e.target.value)}
-              placeholder={'AC Transport\nHotel stay\nBreakfast'} />
+            <label>Package Exclusions</label>
+            <textarea rows={3} value={form.exclusions} onChange={e => set('exclusions', e.target.value)} placeholder={'Personal expenses\nEntry fees'} />
           </div>
           <div>
-            <label>Package Excludes (one per line)</label>
-            <textarea rows={3} value={form.excludes} onChange={e => set('excludes', e.target.value)}
-              placeholder={'Personal expenses\nEntry fees'} />
+            <label>Terms & Conditions</label>
+            <textarea rows={3} value={form.terms_conditions} onChange={e => set('terms_conditions', e.target.value)} placeholder="Cancellation policies..." />
+          </div>
+        </div>
+
+        {/* SEO */}
+        <div className="card space-y-4">
+          <h2 className="font-bold" style={{ color: 'var(--foreground)' }}>SEO (Search Engine Optimization)</h2>
+          <div>
+            <label>Meta Title</label>
+            <input value={form.meta_title} onChange={e => set('meta_title', e.target.value)} placeholder="Best Ayodhya Package 2026" />
+          </div>
+          <div>
+            <label>Meta Description</label>
+            <textarea rows={2} value={form.meta_description} onChange={e => set('meta_description', e.target.value)} placeholder="Book the best Ayodhya darshan package at lowest prices..." />
+          </div>
+          <div>
+            <label>Meta Keywords</label>
+            <input value={form.meta_keywords} onChange={e => set('meta_keywords', e.target.value)} placeholder="ayodhya, tour, ram mandir, package" />
           </div>
         </div>
 
@@ -307,11 +328,11 @@ export default function PackageFormPage() {
         <div className="card space-y-6">
           <h2 className="font-bold" style={{ color: 'var(--foreground)' }}>Images</h2>
           <SingleImageUploader
-            value={form.image}
-            onChange={url => set('image', url)}
+            value={form.cover_image}
+            onChange={url => set('cover_image', url)}
             bucket="package-images"
             folder="main"
-            label="Main Package Image"
+            label="Cover Image"
           />
           <GalleryImageUploader
             value={form.gallery}
@@ -329,7 +350,7 @@ export default function PackageFormPage() {
             {([
               ['is_active', 'Published (Live on website)'],
               ['featured',  'Featured Package'],
-              ['popular',   'Popular Package'],
+              ['booking_open', 'Booking Open'],
             ] as [keyof PackageForm, string][]).map(([key, label]) => (
               <label key={key} className="flex items-center gap-2 cursor-pointer" style={{ margin: 0 }}>
                 <input type="checkbox" checked={form[key] as boolean}

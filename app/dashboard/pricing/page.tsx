@@ -9,7 +9,7 @@ export default function PricingPage() {
   const supabase = createClient()
   const [packages, setPackages] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [prices, setPrices] = useState<Record<number, { price: string; discount_price: string }>>({})
+  const [prices, setPrices] = useState<Record<number, { price: string; offer_price: string }>>({})
   const [history, setHistory] = useState<any[]>([])
   const [saving, setSaving] = useState<number | null>(null)
 
@@ -17,12 +17,12 @@ export default function PricingPage() {
 
   async function loadData() {
     const [pkgs, hist] = await Promise.all([
-      supabase.from('packages').select('id, title, destination_name, price, discount_price, is_active').order('title'),
+      supabase.from('packages').select('id, title, destination_name, price, offer_price, is_active').order('title'),
       supabase.from('price_history').select('*').order('changed_at', { ascending: false }).limit(20)
     ])
     setPackages(pkgs.data || [])
     const init: any = {}
-    pkgs.data?.forEach(p => { init[p.id] = { price: String(p.price || ''), discount_price: String(p.discount_price || '') } })
+    pkgs.data?.forEach(p => { init[p.id] = { price: String(p.price || ''), offer_price: String(p.offer_price || '') } })
     setPrices(init)
     setHistory(hist.data || [])
     setLoading(false)
@@ -31,8 +31,8 @@ export default function PricingPage() {
   async function updatePrice(pkg: any) {
     setSaving(pkg.id)
     const newPrice = Number(prices[pkg.id]?.price)
-    const newDiscount = prices[pkg.id]?.discount_price ? Number(prices[pkg.id].discount_price) : null
-    const { error } = await supabase.from('packages').update({ price: newPrice, discount_price: newDiscount }).eq('id', pkg.id)
+    const newDiscount = prices[pkg.id]?.offer_price ? Number(prices[pkg.id].offer_price) : null
+    const { error } = await supabase.from('packages').update({ price: newPrice, offer_price: newDiscount }).eq('id', pkg.id)
     if (error) { toast.error(error.message); setSaving(null); return }
 
     // Log price history
@@ -70,8 +70,8 @@ export default function PricingPage() {
                       <input type="number" value={prices[pkg.id]?.price || ''} onChange={e => setPrices(p => ({ ...p, [pkg.id]: { ...p[pkg.id], price: e.target.value } }))} style={{ width: '140px' }} />
                     </div>
                     <div>
-                      <label>Discount/Strike Price (₹)</label>
-                      <input type="number" value={prices[pkg.id]?.discount_price || ''} onChange={e => setPrices(p => ({ ...p, [pkg.id]: { ...p[pkg.id], discount_price: e.target.value } }))} style={{ width: '140px' }} placeholder="Optional" />
+                      <label>Offer Price (₹)</label>
+                      <input type="number" value={prices[pkg.id]?.offer_price || ''} onChange={e => setPrices(p => ({ ...p, [pkg.id]: { ...p[pkg.id], offer_price: e.target.value } }))} style={{ width: '140px' }} placeholder="Optional" />
                     </div>
                     <button onClick={() => updatePrice(pkg)} disabled={saving === pkg.id} className="btn-primary" style={{ marginBottom: '0' }}>
                       {saving === pkg.id ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full spinner" /> : <Save size={14} />}
