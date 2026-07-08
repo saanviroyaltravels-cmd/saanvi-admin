@@ -18,7 +18,7 @@ export default function PackageFormPage() {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
-    title: '', dest: '', route: '', description: '', pickup_point: '',
+    title: '', dest: '', route: '', short_description: '', full_description: '', pickup_point: '',
     travel_date: '', return_date: '', duration: '', price: '',
     discount_price: '', seats: '', vehicle_type: 'Innova',
     hotel_included: false, meals_included: false,
@@ -33,7 +33,15 @@ export default function PackageFormPage() {
   async function loadPackage() {
     setLoading(true)
     const { data } = await supabase.from('packages').select('*').eq('id', params.id).single()
-    if (data) setForm({ ...data, includes: data.includes || '', excludes: data.excludes || '', image: data.image || '', gallery: Array.isArray(data.gallery) ? data.gallery : [] })
+    if (data) setForm({
+      ...data,
+      short_description: data.short_description || '',
+      full_description: data.full_description || '',
+      includes: data.includes || '',
+      excludes: data.excludes || '',
+      image: data.image || '',
+      gallery: Array.isArray(data.gallery) ? data.gallery : []
+    })
     setLoading(false)
   }
 
@@ -88,7 +96,8 @@ export default function PackageFormPage() {
             <div><label>Duration</label><input value={form.duration} onChange={e => set('duration', e.target.value)} placeholder="2 Days 1 Night" /></div>
             <div><label>Seats Available</label><input type="number" value={form.seats} onChange={e => set('seats', e.target.value)} placeholder="20" /></div>
           </div>
-          <div><label>Description</label><textarea rows={4} value={form.description} onChange={e => set('description', e.target.value)} placeholder="Package description..." /></div>
+          <div><label>Short Description <span style={{ color: 'var(--muted-foreground)', fontWeight: 400 }}>(shown on package card)</span></label><textarea rows={2} value={form.short_description} onChange={e => set('short_description', e.target.value)} placeholder="Brief summary shown on listing page, e.g. 2 Days Ayodhya Darshan with hotel & meals..." /></div>
+          <div><label>Full Description <span style={{ color: 'var(--muted-foreground)', fontWeight: 400 }}>(shown on package detail page)</span></label><textarea rows={5} value={form.full_description} onChange={e => set('full_description', e.target.value)} placeholder="Detailed itinerary, highlights, important notes..." /></div>
         </div>
 
         {/* Pricing */}
