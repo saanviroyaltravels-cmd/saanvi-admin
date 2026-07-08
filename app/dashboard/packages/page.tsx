@@ -48,7 +48,7 @@ export default function PackagesPage() {
   }
 
   const filtered = packages.filter(p => {
-    const matchSearch = p.title?.toLowerCase().includes(search.toLowerCase()) || p.dest?.toLowerCase().includes(search.toLowerCase())
+    const matchSearch = p.title?.toLowerCase().includes(search.toLowerCase()) || p.destination_name?.toLowerCase().includes(search.toLowerCase())
     const matchStatus = filterStatus === 'all' || (filterStatus === 'active' ? p.is_active : !p.is_active)
     return matchSearch && matchStatus
   })
@@ -112,7 +112,7 @@ export default function PackagesPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="text-sm">{pkg.dest || pkg.destination}</td>
+                    <td className="text-sm">{pkg.destination_name || pkg.destination_id}</td>
                     <td>
                       <p className="font-semibold text-sm">{formatCurrency(pkg.price || 0)}</p>
                       {pkg.discount_price && <p className="text-xs line-through" style={{ color: 'var(--muted-foreground)' }}>{formatCurrency(pkg.discount_price)}</p>}

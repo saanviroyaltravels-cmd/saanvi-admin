@@ -16,7 +16,8 @@ const DESTINATIONS = [
 // ── Only the columns that actually exist in the packages table ─────────────────
 interface PackageForm {
   title: string
-  dest: string
+  destination_id: string | null
+  destination_name: string
   route: string
   pickup_point: string
   short_description: string
@@ -40,7 +41,7 @@ interface PackageForm {
 }
 
 const EMPTY: PackageForm = {
-  title: '', dest: '', route: '', pickup_point: '',
+  title: '', destination_id: null, destination_name: '', route: '', pickup_point: '',
   short_description: '', full_description: '',
   travel_date: '', return_date: '', duration: '',
   price: '', discount_price: '', seats: '',
@@ -68,7 +69,7 @@ export default function PackageFormPage() {
     const { data, error } = await supabase
       .from('packages')
       .select([
-        'title', 'dest', 'route', 'pickup_point',
+        'title', 'destination_id', 'destination_name', 'route', 'pickup_point',
         'short_description', 'full_description',
         'travel_date', 'return_date', 'duration',
         'price', 'discount_price', 'seats', 'vehicle_type',
@@ -86,7 +87,8 @@ export default function PackageFormPage() {
       const d = data as any
       setForm({
         title:             d.title             || '',
-        dest:              d.dest              || '',
+        destination_id:    d.destination_id    || null,
+        destination_name:  d.destination_name  || '',
         route:             d.route             || '',
         pickup_point:      d.pickup_point      || '',
         short_description: d.short_description || '',
@@ -122,7 +124,8 @@ export default function PackageFormPage() {
     // ── Explicit payload — only known DB columns, no spread of raw DB data ──
     const payload = {
       title:             form.title,
-      dest:              form.dest,
+      destination_id:    form.destination_id,
+      destination_name:  form.destination_name,
       route:             form.route,
       pickup_point:      form.pickup_point,
       short_description: form.short_description,
@@ -189,8 +192,8 @@ export default function PackageFormPage() {
                 required placeholder="Ayodhya Darshan Package" />
             </div>
             <div>
-              <label>Destination *</label>
-              <select value={form.dest} onChange={e => set('dest', e.target.value)} required>
+              <label>Destination Name *</label>
+              <select value={form.destination_name} onChange={e => set('destination_name', e.target.value)} required>
                 <option value="">Select destination</option>
                 {DESTINATIONS.map(d => <option key={d}>{d}</option>)}
               </select>

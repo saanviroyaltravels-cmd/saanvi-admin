@@ -17,7 +17,7 @@ export default function PricingPage() {
 
   async function loadData() {
     const [pkgs, hist] = await Promise.all([
-      supabase.from('packages').select('id, title, dest, price, discount_price, is_active').order('title'),
+      supabase.from('packages').select('id, title, destination_name, price, discount_price, is_active').order('title'),
       supabase.from('price_history').select('*').order('changed_at', { ascending: false }).limit(20)
     ])
     setPackages(pkgs.data || [])
@@ -63,7 +63,7 @@ export default function PricingPage() {
                     <p className="font-semibold text-sm" style={{ color: 'var(--foreground)' }}>{pkg.title}</p>
                     <span className={`badge ${pkg.is_active ? 'badge-green' : 'badge-gray'}`}>{pkg.is_active ? 'Live' : 'Draft'}</span>
                   </div>
-                  <p className="text-xs mb-3" style={{ color: 'var(--muted-foreground)' }}>{pkg.dest}</p>
+                  <p className="text-xs mb-3" style={{ color: 'var(--muted-foreground)' }}>{pkg.destination_name}</p>
                   <div className="flex flex-wrap items-end gap-3">
                     <div>
                       <label>Current Price (₹)</label>
