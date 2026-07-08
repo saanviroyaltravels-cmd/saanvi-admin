@@ -21,30 +21,47 @@ export default function PackagesPage() {
     setLoading(false)
   }
 
-  async function deletePackage(id: number) {
+  async function deletePackage(id: string) {
     if (!confirm('Delete this package?')) return
-    await supabase.from('packages').delete().eq('id', id)
-    toast.success('Package deleted')
-    loadPackages()
+    const { error } = await supabase.from('packages').delete().eq('id', id)
+    if (error) toast.error('Error deleting: ' + error.message)
+    else {
+      toast.success('Package deleted')
+      loadPackages()
+    }
   }
 
   async function togglePublish(pkg: any) {
-    await supabase.from('packages').update({ is_active: !pkg.is_active }).eq('id', pkg.id)
-    toast.success(pkg.is_active ? 'Package unpublished' : 'Package published')
-    loadPackages()
+    const { data, error } = await supabase.from('packages').update({ is_active: !pkg.is_active }).eq('id', pkg.id).select()
+    if (error) toast.error(error.message)
+    else if (!data || data.length === 0) toast.error('Update failed: 0 rows modified. RLS policy might be blocking.')
+    else {
+      toast.success(pkg.is_active ? 'Package unpublished' : 'Package published')
+      loadPackages()
+    }
   }
 
   async function toggleFeatured(pkg: any) {
-    await supabase.from('packages').update({ featured: !pkg.featured }).eq('id', pkg.id)
-    toast.success('Updated')
-    loadPackages()
+    const { data, error } = await supabase.from('packages').update({ featured: !pkg.featured }).eq('id', pkg.id).select()
+    if (error) toast.error(error.message)
+    else if (!data || data.length === 0) toast.error('Update failed: 0 rows modified. RLS policy might be blocking.')
+    else {
+      toast.success('Updated')
+      loadPackages()
+    }
   }
 
   async function duplicatePackage(pkg: any) {
-    const { id, created_at, updated_at, ...rest } = pkg
+    toast.loading('Duplicating...', { id: 'dup' })
+    const { data: fullPkg, error: fetchErr } = await supabase.from('packages').select('*').eq('id', pkg.id).single()
+    if (fetchErr || !fullPkg) {
+      toast.error('Failed to load full package data: ' + (fetchErr?.message || ''), { id: 'dup' })
+      return
+    }
+    const { id, created_at, updated_at, ...rest } = fullPkg
     const { error } = await supabase.from('packages').insert({ ...rest, title: rest.title + ' (Copy)', slug: (rest.slug || rest.title).toLowerCase() + '-copy', is_active: false })
-    if (error) toast.error(error.message)
-    else { toast.success('Package duplicated'); loadPackages() }
+    if (error) toast.error(error.message, { id: 'dup' })
+    else { toast.success('Package duplicated', { id: 'dup' }); loadPackages() }
   }
 
   const filtered = packages.filter(p => {

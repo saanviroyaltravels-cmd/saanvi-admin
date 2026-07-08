@@ -185,6 +185,8 @@ export default function PackageFormPage() {
         }
         
         toast.success('Package updated successfully!')
+        router.refresh()
+        router.push('/dashboard/packages')
       }
     } catch (err: any) {
       console.error('Save error:', err)

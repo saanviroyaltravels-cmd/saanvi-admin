@@ -32,8 +32,9 @@ export default function PricingPage() {
     setSaving(pkg.id)
     const newPrice = Number(prices[pkg.id]?.price)
     const newDiscount = prices[pkg.id]?.offer_price ? Number(prices[pkg.id].offer_price) : null
-    const { error } = await supabase.from('packages').update({ price: newPrice, offer_price: newDiscount }).eq('id', pkg.id)
+    const { data, error } = await supabase.from('packages').update({ price: newPrice, offer_price: newDiscount }).eq('id', pkg.id).select()
     if (error) { toast.error(error.message); setSaving(null); return }
+    if (!data || data.length === 0) { toast.error('Update failed. Check RLS or ID.'); setSaving(null); return }
 
     // Log price history
     await supabase.from('price_history').insert({ package_id: pkg.id, package_name: pkg.title, old_price: pkg.price, new_price: newPrice, changed_at: new Date().toISOString() })
