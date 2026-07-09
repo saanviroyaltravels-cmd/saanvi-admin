@@ -173,6 +173,9 @@ export default function PackageFormPage() {
         const { data, error } = await supabase.from('packages').insert(payload).select()
         console.log('Supabase Insert Response:', { data, error })
         if (error) throw error
+        if (!data || data.length === 0) {
+          throw new Error('Insert failed: 0 rows inserted. Check if RLS policy blocked INSERT.')
+        }
         toast.success('Package created!')
         router.push('/dashboard/packages')
       } else {

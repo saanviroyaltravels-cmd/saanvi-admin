@@ -23,8 +23,9 @@ export default function PackagesPage() {
 
   async function deletePackage(id: string) {
     if (!confirm('Delete this package?')) return
-    const { error } = await supabase.from('packages').delete().eq('id', id)
+    const { data, error } = await supabase.from('packages').delete().eq('id', id).select()
     if (error) toast.error('Error deleting: ' + error.message)
+    else if (!data || data.length === 0) toast.error('Delete failed: 0 rows modified. RLS policy might be blocking.')
     else {
       toast.success('Package deleted')
       loadPackages()
@@ -59,8 +60,9 @@ export default function PackagesPage() {
       return
     }
     const { id, created_at, updated_at, ...rest } = fullPkg
-    const { error } = await supabase.from('packages').insert({ ...rest, title: rest.title + ' (Copy)', slug: (rest.slug || rest.title).toLowerCase() + '-copy', is_active: false })
+    const { data, error } = await supabase.from('packages').insert({ ...rest, title: rest.title + ' (Copy)', slug: (rest.slug || rest.title).toLowerCase() + '-copy', is_active: false }).select()
     if (error) toast.error(error.message, { id: 'dup' })
+    else if (!data || data.length === 0) toast.error('Duplicate failed: 0 rows inserted. RLS policy might be blocking.', { id: 'dup' })
     else { toast.success('Package duplicated', { id: 'dup' }); loadPackages() }
   }
 
