@@ -45,6 +45,16 @@ interface PackageForm {
   meta_description: string
   meta_keywords: string
   sort_order: string | number
+  title_hi: string
+  short_description_hi: string
+  full_description_hi: string
+  highlights: string
+  highlights_hi: string
+  itinerary_hi: string
+  inclusions_hi: string
+  exclusions_hi: string
+  terms_conditions_hi: string
+  route_map_image: string
 }
 
 const EMPTY: PackageForm = {
@@ -55,7 +65,8 @@ const EMPTY: PackageForm = {
   short_description: '', full_description: '', itinerary: '', inclusions: '', exclusions: '', terms_conditions: '',
   cover_image: '', gallery: [],
   featured: false, is_active: true, booking_open: true,
-  meta_title: '', meta_description: '', meta_keywords: '', sort_order: 0
+  meta_title: '', meta_description: '', meta_keywords: '', sort_order: 0,
+  title_hi: '', short_description_hi: '', full_description_hi: '', highlights: '', highlights_hi: '', itinerary_hi: '', inclusions_hi: '', exclusions_hi: '', terms_conditions_hi: '', route_map_image: ''
 }
 
 export default function PackageFormPage() {
@@ -67,6 +78,7 @@ export default function PackageFormPage() {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<PackageForm>(EMPTY)
+  const [langTab, setLangTab] = useState<'en' | 'hi'>('en')
 
   useEffect(() => { if (!isNew) loadPackage() }, [])
 
@@ -78,7 +90,7 @@ export default function PackageFormPage() {
         title, slug, destination_id, destination_name, category, duration, duration_days, duration_nights,
         price, offer_price, discount_percent, max_seats, available_seats, vehicle_type_id, pickup_point,
         short_description, full_description, itinerary, inclusions, exclusions, terms_conditions,
-        cover_image, gallery, featured, is_active, booking_open, meta_title, meta_description, meta_keywords, sort_order
+        cover_image, gallery, featured, is_active, booking_open, meta_title, meta_description, meta_keywords, sort_order, title_hi, short_description_hi, full_description_hi, highlights, highlights_hi, itinerary_hi, inclusions_hi, exclusions_hi, terms_conditions_hi, route_map_image
       `)
       .eq('id', params.id)
       .single()
@@ -132,6 +144,16 @@ export default function PackageFormPage() {
 
     // Explicit payload mapping to exactly match the database schema
     const payload = {
+      title_hi: form.title_hi,
+      short_description_hi: form.short_description_hi,
+      full_description_hi: form.full_description_hi,
+      highlights: form.highlights.split('\n').map(s=>s.trim()).filter(Boolean),
+      highlights_hi: form.highlights_hi.split('\n').map(s=>s.trim()).filter(Boolean),
+      itinerary_hi: form.itinerary_hi.split('\n').map(s=>s.trim()).filter(Boolean),
+      inclusions_hi: form.inclusions_hi.split('\n').map(s=>s.trim()).filter(Boolean),
+      exclusions_hi: form.exclusions_hi.split('\n').map(s=>s.trim()).filter(Boolean),
+      terms_conditions_hi: form.terms_conditions_hi,
+      route_map_image: form.route_map_image,
       title:             form.title,
       slug:              form.slug || form.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
       destination_id:    form.destination_id,
@@ -220,7 +242,27 @@ export default function PackageFormPage() {
       </div>
 
       <form onSubmit={handleSave} className="space-y-5">
+        
+        {/* Language Tabs */}
+        <div className="flex space-x-4 mb-4 border-b border-slate-200">
+          <button 
+            type="button"
+            onClick={() => setLangTab('en')}
+            className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${langTab === 'en' ? 'border-royal-600 text-royal-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+          >
+            English
+          </button>
+          <button 
+            type="button"
+            onClick={() => setLangTab('hi')}
+            className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${langTab === 'hi' ? 'border-royal-600 text-royal-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+          >
+            हिन्दी (Hindi)
+          </button>
+        </div>
+        
         {/* Basic Info */}
+
         <div className="card space-y-4">
           <h2 className="font-bold" style={{ color: 'var(--foreground)' }}>Basic Information</h2>
           
