@@ -48,7 +48,7 @@ interface PackageForm {
 }
 
 const EMPTY: PackageForm = {
-  title: '', slug: '', destination_id: null, destination_name: '', category: 'Tour',
+  title: '', slug: '', destination_id: null, destination_name: '', category: 'Religious Places',
   duration: '', duration_days: 1, duration_nights: 0,
   price: '', offer_price: '', discount_percent: 0,
   max_seats: 10, available_seats: 10, vehicle_type_id: null, pickup_point: '',
@@ -92,7 +92,7 @@ export default function PackageFormPage() {
         slug:              d.slug              || '',
         destination_id:    d.destination_id    || null,
         destination_name:  d.destination_name  || '',
-        category:          d.category          || 'Tour',
+        category:          d.category          || 'Religious Places',
         duration:          d.duration          || '',
         duration_days:     d.duration_days     || 1,
         duration_nights:   d.duration_nights   || 0,
@@ -188,8 +188,7 @@ export default function PackageFormPage() {
         }
         
         toast.success('Package updated successfully!')
-        router.refresh()
-        router.push('/dashboard/packages')
+        window.location.href = '/dashboard/packages'
       }
     } catch (err: any) {
       console.error('Save error:', err)
@@ -236,18 +235,13 @@ export default function PackageFormPage() {
             </div>
             <div>
               <label>Destination Name *</label>
-              <select value={form.destination_name} onChange={e => set('destination_name', e.target.value)} required>
-                <option value="">Select destination</option>
-                {DESTINATIONS.map(d => <option key={d}>{d}</option>)}
-              </select>
+              <input value={form.destination_name} onChange={e => set('destination_name', e.target.value)} required placeholder="e.g. Ayodhya" />
             </div>
             <div>
               <label>Category</label>
               <select value={form.category} onChange={e => set('category', e.target.value)}>
-                <option>Tour</option>
-                <option>Cab</option>
-                <option>Hotel</option>
-                <option>Activity</option>
+                <option>Religious Places</option>
+                <option>Adventure</option>
               </select>
             </div>
             <div>
