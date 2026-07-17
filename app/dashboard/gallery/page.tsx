@@ -25,11 +25,22 @@ export default function GalleryPage() {
   async function upload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]; if (!file) return
     setUploading(true)
+
+    const bucketName = process.env.NEXT_PUBLIC_STORAGE_BUCKET || 'saanvi-media'
     const ext = file.name.split('.').pop()
     const path = `${category}/${Date.now()}.${ext}`
-    const { error: upErr } = await supabase.storage.from('saanvi-media').upload(path, file, { upsert: true })
-    if (upErr) { toast.error(upErr.message); setUploading(false); return }
-    const { data: { publicUrl } } = supabase.storage.from('saanvi-media').getPublicUrl(path)
+    
+    const { error: upErr } = await supabase.storage.from(bucketName).upload(path, file, { upsert: true })
+    if (upErr) { 
+      if (upErr.message.includes('Bucket not found') || upErr.message.includes('not found')) {
+        toast.error(`Storage Bucket '${bucketName}' not found. Please run the SQL migration to create it.`)
+      } else {
+        toast.error('Upload failed: ' + upErr.message)
+      }
+      setUploading(false)
+      return 
+    }
+    const { data: { publicUrl } } = supabase.storage.from(bucketName).getPublicUrl(path)
     await supabase.from('gallery').insert({ url: publicUrl, category, name: file.name, size: file.size })
     toast.success('Image uploaded!'); setUploading(false); loadImages()
   }

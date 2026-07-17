@@ -130,7 +130,7 @@ export default function PackageFormPage() {
         meta_description:  d.meta_description  || '',
         meta_keywords:     d.meta_keywords     || '',
         sort_order:        d.sort_order        ?? 0,
-      })
+      } as any)
     }
     setLoading(false)
   }
