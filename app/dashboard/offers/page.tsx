@@ -52,6 +52,10 @@ export default function OffersPage() {
       toast.error('Offer Title is required')
       return
     }
+    if (!form.package_id) {
+      toast.error('Please select a Package.')
+      return
+    }
     setSaving(true)
     
     // Upload image if selected (now handled via Media Library — image URL set directly)
@@ -148,9 +152,9 @@ export default function OffersPage() {
               </div>
               
               <div>
-                <label>Link to Package</label>
+                <label>Linked Package (Required)</label>
                 <select value={form.package_id} onChange={e => set('package_id', e.target.value)} className="w-full h-10 px-3 rounded-md border text-sm" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)', color: 'var(--foreground)' }}>
-                  <option value="">-- None --</option>
+                  <option value="">-- Select a Package --</option>
                   {packages.map(p => (
                     <option key={p.id} value={p.id}>{p.title}</option>
                   ))}
