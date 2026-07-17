@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
@@ -34,7 +34,7 @@ function formatBytes(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-export default function MediaLibraryPage() {
+function MediaLibraryContent() {
   const supabase = createClient()
   const searchParams = useSearchParams()
 
@@ -331,6 +331,14 @@ export default function MediaLibraryPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function MediaLibraryPage() {
+  return (
+    <Suspense fallback={<div className="p-8 flex justify-center"><div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full spinner" /></div>}>
+      <MediaLibraryContent />
+    </Suspense>
   )
 }
 
