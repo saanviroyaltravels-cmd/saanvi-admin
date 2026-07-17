@@ -1,9 +1,10 @@
 'use client'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import { Plus, Edit, Trash2, ToggleLeft, ToggleRight, Upload, X } from 'lucide-react'
+import { Plus, Edit, Trash2, ToggleLeft, ToggleRight, X } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
+import { MediaPickerField } from '@/components/MediaLibrary'
 
 const emptyOffer = { 
   title: '', 
@@ -29,9 +30,6 @@ export default function OffersPage() {
   const [editing, setEditing] = useState<any>(null)
   const [form, setForm] = useState(emptyOffer)
   const [saving, setSaving] = useState(false)
-  const [imageFile, setImageFile] = useState<File | null>(null)
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => { 
     loadOffers()
@@ -49,28 +47,6 @@ export default function OffersPage() {
     setPackages(data || [])
   }
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) {
-      setImageFile(null)
-      setImagePreview(null)
-      return
-    }
-    const file = e.target.files[0]
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image exceeds 5MB limit')
-      e.target.value = ''
-      return
-    }
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp']
-    if (!validTypes.includes(file.type)) {
-      toast.error('Only JPG, PNG and WebP formats are allowed')
-      e.target.value = ''
-      return
-    }
-    setImageFile(file)
-    setImagePreview(URL.createObjectURL(file))
-  }
-
   async function save() {
     if (!form.title) {
       toast.error('Offer Title is required')
@@ -78,27 +54,8 @@ export default function OffersPage() {
     }
     setSaving(true)
     
-    let imageUrl = form.image
-
-    // Upload image if selected
-    if (imageFile) {
-      const bucketName = process.env.NEXT_PUBLIC_STORAGE_BUCKET || 'saanvi-media'
-      const ext = imageFile.name.split('.').pop()
-      const fileName = `offer_${Date.now()}.${ext}`
-      
-      const { error: uploadError } = await supabase.storage.from(bucketName).upload(fileName, imageFile)
-      if (uploadError) {
-        if (uploadError.message.includes('Bucket not found') || uploadError.message.includes('not found')) {
-          toast.error(`Storage Bucket '${bucketName}' not found. Please run the SQL migration to create it.`)
-        } else {
-          toast.error('Upload failed: ' + uploadError.message)
-        }
-        setSaving(false)
-        return
-      }
-      const { data } = supabase.storage.from(bucketName).getPublicUrl(fileName)
-      imageUrl = data.publicUrl
-    }
+    // Upload image if selected (now handled via Media Library — image URL set directly)
+    const imageUrl = form.image
 
     const payload = { 
       ...form, 
@@ -118,8 +75,6 @@ export default function OffersPage() {
       toast.success(editing?.id ? 'Offer updated' : 'Offer created')
       setEditing(null)
       setForm(emptyOffer)
-      setImageFile(null)
-      setImagePreview(null)
       loadOffers() 
     }
     setSaving(false)
@@ -146,8 +101,6 @@ export default function OffersPage() {
       package_id: offer.package_id || '',
       offer_type: offer.offer_type || 'Special Offer'
     })
-    setImageFile(null)
-    setImagePreview(offer.image || null)
   }
   
   const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
@@ -159,7 +112,7 @@ export default function OffersPage() {
           <h1 className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>Offer Management</h1>
           <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>Create and manage promotional offers</p>
         </div>
-        <button onClick={() => { setEditing({}); setForm(emptyOffer); setImagePreview(null); setImageFile(null); }} className="btn-primary"><Plus size={16} /> New Offer</button>
+        <button onClick={() => { setEditing({}); setForm(emptyOffer); }} className="btn-primary"><Plus size={16} /> New Offer</button>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-5">
@@ -170,40 +123,14 @@ export default function OffersPage() {
             
             <div><label>Offer Title *</label><input value={form.title} onChange={e => set('title', e.target.value)} placeholder="🔥 Ayodhya Special Offer" /></div>
             <div><label>Description</label><textarea rows={3} value={form.description} onChange={e => set('description', e.target.value)} placeholder="Limited time offer..." /></div>
-            
-            {/* Image Upload Component */}
+                       {/* Poster Image via Media Library */}
             <div>
-              <label>Poster Image (Max 5MB)</label>
-              <div className="flex items-start gap-4">
-                <div 
-                  className="w-32 h-24 border border-dashed rounded-lg bg-slate-50 flex flex-col items-center justify-center overflow-hidden bg-cover bg-center"
-                  style={{ backgroundImage: imagePreview ? `url(${imagePreview})` : 'none', borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}
-                >
-                  {!imagePreview && <div className="text-center text-xs" style={{ color: 'var(--muted-foreground)' }}><Upload size={20} className="mx-auto mb-1 opacity-50"/> No Image</div>}
-                </div>
-                <div className="flex-1 space-y-2">
-                  <input 
-                    type="file" 
-                    ref={fileInputRef}
-                    accept="image/jpeg, image/png, image/webp" 
-                    onChange={handleImageSelect}
-                    className="block w-full text-sm text-slate-500
-                      file:mr-4 file:py-2 file:px-4
-                      file:rounded-md file:border-0
-                      file:text-sm file:font-semibold
-                      file:bg-blue-50 file:text-blue-700
-                      hover:file:bg-blue-100 cursor-pointer"
-                  />
-                  {imagePreview && (
-                    <button 
-                      onClick={() => { setImagePreview(null); setImageFile(null); set('image', ''); if (fileInputRef.current) fileInputRef.current.value = ''; }} 
-                      className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1 font-medium"
-                    >
-                      <X size={12} /> Remove Image
-                    </button>
-                  )}
-                </div>
-              </div>
+              <MediaPickerField
+                value={form.image}
+                onChange={url => set('image', url)}
+                label="Poster Image"
+                category="offers"
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -246,7 +173,7 @@ export default function OffersPage() {
             
             <div className="flex gap-2 pt-2">
               <button onClick={save} disabled={saving} className="btn-primary">{saving ? 'Saving...' : 'Save Offer'}</button>
-              <button onClick={() => { setEditing(null); setForm(emptyOffer); setImagePreview(null); setImageFile(null); }} className="btn-ghost">Cancel</button>
+              <button onClick={() => { setEditing(null); setForm(emptyOffer); }} className="btn-ghost">Cancel</button>
             </div>
           </div>
         )}

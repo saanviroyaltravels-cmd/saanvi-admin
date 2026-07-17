@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { ArrowLeft, Save } from 'lucide-react'
 import Link from 'next/link'
-import { SingleImageUploader, GalleryImageUploader } from '@/components/ImageUploader'
+import { MediaPickerField, MediaPickerMultiField } from '@/components/MediaLibrary'
 
 const VEHICLE_TYPES = ['Innova', 'Innova Crysta', 'Ertiga', 'Traveller', 'Bus', 'Sedan', 'SUV']
 const DESTINATIONS = [
@@ -386,19 +386,24 @@ export default function PackageFormPage() {
         {/* Images */}
         <div className="card space-y-6">
           <h2 className="font-bold" style={{ color: 'var(--foreground)' }}>Images</h2>
-          <SingleImageUploader
+          <MediaPickerField
             value={form.cover_image}
             onChange={url => set('cover_image', url)}
-            bucket="package-images"
-            folder="main"
             label="Cover Image"
+            category="packages"
           />
-          <GalleryImageUploader
+          <MediaPickerMultiField
             value={form.gallery}
             onChange={urls => set('gallery', urls)}
-            bucket="package-images"
-            folder="gallery"
+            label="Gallery Images (select multiple)"
+            category="packages"
             maxImages={10}
+          />
+          <MediaPickerField
+            value={form.route_map_image}
+            onChange={url => set('route_map_image', url)}
+            label="Route Map Image (optional)"
+            category="packages"
           />
         </div>
 

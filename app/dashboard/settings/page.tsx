@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { Save } from 'lucide-react'
+import { MediaPickerField } from '@/components/MediaLibrary'
 
 export default function SettingsPage() {
   const supabase = createClient()
@@ -63,10 +64,30 @@ export default function SettingsPage() {
         <div className="grid md:grid-cols-2 gap-4">
           <Field label="Company Name" field="company_name" />
           <Field label="Tagline" field="tagline" />
-          <Field label="Logo URL" field="logo_url" placeholder="https://..." />
-          <Field label="Favicon URL" field="favicon_url" placeholder="https://..." />
           <Field label="GST Number" field="gst_number" />
           <Field label="Footer Text" field="footer_text" />
+        </div>
+        <div className="grid md:grid-cols-2 gap-4 mt-4">
+          <div>
+            <label>Logo</label>
+            <MediaPickerField
+              value={form.logo_url}
+              onChange={url => set('logo_url', url)}
+              label="Company Logo"
+              category="logos"
+              placeholder="Select your company logo from Media Library"
+            />
+          </div>
+          <div>
+            <label>Favicon</label>
+            <MediaPickerField
+              value={form.favicon_url}
+              onChange={url => set('favicon_url', url)}
+              label="Favicon (browser tab icon)"
+              category="logos"
+              placeholder="Select a square icon (32×32 or 64×64)"
+            />
+          </div>
         </div>
       </div>
 
