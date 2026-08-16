@@ -17,7 +17,7 @@ const navItems = [
   { href: '/dashboard/pricing', icon: DollarSign, label: 'Price Management' },
   { href: '/dashboard/bookings', icon: BookOpen, label: 'Bookings' },
   { href: '/dashboard/customers', icon: Users, label: 'Customers' },
-  { href: '/dashboard/offers', icon: Tag, label: 'Offers' },
+  { href: '/dashboard/offers', icon: Tag, label: 'Special Offers' },
   { href: '/dashboard/media', icon: Library, label: 'Media Library' },
   { href: '/dashboard/popups', icon: MessageSquare, label: 'Popup Builder' },
   { href: '/dashboard/notification-bar', icon: Bell, label: 'Notification Bar' },

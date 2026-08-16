@@ -113,10 +113,10 @@ export default function OffersPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>Offer Management</h1>
-          <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>Create and manage promotional offers</p>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>Special Offers Management</h1>
+          <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>Create and manage special promotional offers displayed on website</p>
         </div>
-        <button onClick={() => { setEditing({}); setForm(emptyOffer); }} className="btn-primary"><Plus size={16} /> New Offer</button>
+        <button onClick={() => { setEditing({}); setForm(emptyOffer); }} className="btn-primary"><Plus size={16} /> New Special Offer</button>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-5">
