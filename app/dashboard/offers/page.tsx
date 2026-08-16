@@ -63,9 +63,11 @@ export default function OffersPage() {
 
     const payload = { 
       ...form, 
-      priority: Number(form.priority),
+      priority: Number(form.priority) || 1,
       offer_price: form.offer_price ? Number(form.offer_price) : null,
       original_price: form.original_price ? Number(form.original_price) : null,
+      start_date: form.start_date && form.start_date.trim() !== '' ? form.start_date : null,
+      end_date: form.end_date && form.end_date.trim() !== '' ? form.end_date : null,
       package_id: form.package_id || null,
       image: imageUrl
     }
