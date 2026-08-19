@@ -19,6 +19,7 @@ interface PackageForm {
   duration_days: string | number
   duration_nights: string | number
   price: string | number
+  price_type: string
   offer_price: string | number
   discount_percent: string | number
   max_seats: string | number
@@ -55,7 +56,7 @@ interface PackageForm {
 const EMPTY: PackageForm = {
   title: '', slug: '', destination_id: null, destination_name: '', category: 'Religious Places',
   duration: '', duration_days: 1, duration_nights: 0,
-  price: '', offer_price: '', discount_percent: 0,
+  price: '', price_type: 'per_person', offer_price: '', discount_percent: 0,
   max_seats: 10, available_seats: 10, vehicle_type_id: null, pickup_point: '',
   short_description: '', full_description: '', itinerary: '', inclusions: '', exclusions: '', terms_conditions: '',
   cover_image: '', gallery: [],
@@ -121,6 +122,7 @@ export default function PackageFormPage() {
           duration_days:        d.duration_days        ?? 1,
           duration_nights:      d.duration_nights      ?? 0,
           price:                d.price                ?? '',
+          price_type:           d.price_type           || 'per_person',
           offer_price:          d.offer_price          ?? '',
           discount_percent:     d.discount_percent     ?? 0,
           max_seats:            d.max_seats            ?? 10,
@@ -186,7 +188,7 @@ export default function PackageFormPage() {
       }
 
       // Explicit payload mapping to exactly match the database schema
-      const payload = {
+      const payload: any = {
         title:                form.title.trim(),
         slug:                 (form.slug || form.title).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
         destination_id:       form.destination_id || null,
@@ -196,6 +198,7 @@ export default function PackageFormPage() {
         duration_days:        Number(form.duration_days) || 0,
         duration_nights:      Number(form.duration_nights) || 0,
         price:                Number(form.price) || 0,
+        price_type:           form.price_type || 'per_person',
         offer_price:          form.offer_price !== '' && form.offer_price !== null ? Number(form.offer_price) : null,
         discount_percent:     Number(form.discount_percent) || 0,
         max_seats:            Number(form.max_seats) || 0,
@@ -235,7 +238,14 @@ export default function PackageFormPage() {
       console.log('Payload:', payload)
 
       if (isNew) {
-        const { data, error } = await supabase.from('packages').insert(payload).select()
+        let { data, error } = await supabase.from('packages').insert(payload).select()
+        if (error && error.message && error.message.includes('price_type')) {
+          console.warn('price_type column not in DB yet, retrying without price_type')
+          const { price_type, ...fallbackPayload } = payload
+          const res = await supabase.from('packages').insert(fallbackPayload).select()
+          data = res.data
+          error = res.error
+        }
         console.log('Supabase Insert Response:', { data, error })
         if (error) throw error
         if (!data || data.length === 0) {
@@ -244,7 +254,14 @@ export default function PackageFormPage() {
         toast.success('Package created successfully!')
         router.push('/dashboard/packages')
       } else {
-        const { data, error } = await supabase.from('packages').update(payload).eq('id', params.id).select()
+        let { data, error } = await supabase.from('packages').update(payload).eq('id', params.id).select()
+        if (error && error.message && error.message.includes('price_type')) {
+          console.warn('price_type column not in DB yet, retrying without price_type')
+          const { price_type, ...fallbackPayload } = payload
+          const res = await supabase.from('packages').update(fallbackPayload).eq('id', params.id).select()
+          data = res.data
+          error = res.error
+        }
         console.log('Supabase Update Response:', { data, error })
         
         if (error) throw error
@@ -407,10 +424,17 @@ export default function PackageFormPage() {
         {/* Pricing & Availability */}
         <div className="card space-y-4">
           <h2 className="font-bold" style={{ color: 'var(--foreground)' }}>Pricing & Availability</h2>
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <label>Regular Price (₹) *</label>
               <input type="number" min="0" value={form.price} onChange={e => set('price', e.target.value)} required placeholder="2999" />
+            </div>
+            <div>
+              <label>Price Type</label>
+              <select value={form.price_type || 'per_person'} onChange={e => set('price_type', e.target.value)}>
+                <option value="per_person">Per Person</option>
+                <option value="per_package">Per Package</option>
+              </select>
             </div>
             <div>
               <label>Offer Price (₹)</label>

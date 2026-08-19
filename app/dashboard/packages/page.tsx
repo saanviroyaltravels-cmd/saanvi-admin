@@ -16,7 +16,7 @@ export default function PackagesPage() {
   useEffect(() => { loadPackages() }, [])
 
   async function loadPackages() {
-    const { data } = await supabase.from('packages').select('id, title, slug, destination_name, cover_image, price, offer_price, duration, is_active, featured, created_at').order('created_at', { ascending: false })
+    const { data } = await supabase.from('packages').select('*').order('created_at', { ascending: false })
     setPackages(data || [])
     setLoading(false)
   }
@@ -134,6 +134,7 @@ export default function PackagesPage() {
                     <td className="text-sm">{pkg.destination_name || pkg.destination_id}</td>
                     <td>
                       <p className="font-semibold text-sm">{formatCurrency(pkg.price || 0)}</p>
+                      <p className="text-[11px]" style={{ color: 'var(--muted-foreground)' }}>{pkg.price_type === 'per_package' ? 'Per Package' : 'Per Person'}</p>
                       {pkg.offer_price && <p className="text-xs line-through" style={{ color: 'var(--muted-foreground)' }}>{formatCurrency(pkg.offer_price)}</p>}
                     </td>
                     <td className="text-sm">{pkg.duration || '—'}</td>
