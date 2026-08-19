@@ -7,13 +7,8 @@ import { ArrowLeft, Save } from 'lucide-react'
 import Link from 'next/link'
 import { MediaPickerField, MediaPickerMultiField } from '@/components/MediaLibrary'
 
-const VEHICLE_TYPES = ['Innova', 'Innova Crysta', 'Ertiga', 'Traveller', 'Bus', 'Sedan', 'SUV']
-const DESTINATIONS = [
-  'Ayodhya', 'Varanasi', 'Bodh Gaya', 'Prayagraj', 'Rajgir', 'Nalanda',
-  'Patna', 'Lucknow', 'Gorakhpur', 'Kathmandu', 'Ujjain', 'Shirdi'
-]
+const CATEGORIES = ['Religious Places', 'Adventure', 'Heritage & Culture', 'Nature & Wildlife', 'Weekend Getaway']
 
-// Matches the new Supabase schema exactly
 interface PackageForm {
   title: string
   slug: string
@@ -66,7 +61,21 @@ const EMPTY: PackageForm = {
   cover_image: '', gallery: [],
   featured: false, is_active: true, booking_open: true,
   meta_title: '', meta_description: '', meta_keywords: '', sort_order: 0,
-  title_hi: '', short_description_hi: '', full_description_hi: '', highlights: '', highlights_hi: '', itinerary_hi: '', inclusions_hi: '', exclusions_hi: '', terms_conditions_hi: '', route_map_image: ''
+  title_hi: '', short_description_hi: '', full_description_hi: '',
+  highlights: '', highlights_hi: '', itinerary_hi: '', inclusions_hi: '', exclusions_hi: '', terms_conditions_hi: '', route_map_image: ''
+}
+
+function toArray(val: any): string[] {
+  if (!val) return []
+  if (Array.isArray(val)) return val.map(s => String(s).trim()).filter(Boolean)
+  if (typeof val === 'string') return val.split('\n').map(s => s.trim()).filter(Boolean)
+  return []
+}
+
+function toTextarea(val: any): string {
+  if (!val) return ''
+  if (Array.isArray(val)) return val.join('\n')
+  return String(val)
 }
 
 export default function PackageFormPage() {
@@ -80,59 +89,77 @@ export default function PackageFormPage() {
   const [form, setForm] = useState<PackageForm>(EMPTY)
   const [langTab, setLangTab] = useState<'en' | 'hi'>('en')
 
-  useEffect(() => { if (!isNew) loadPackage() }, [])
+  useEffect(() => {
+    if (!isNew) {
+      loadPackage()
+    }
+  }, [params.id])
 
   async function loadPackage() {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('packages')
-      .select(`
-        title, slug, destination_id, destination_name, category, duration, duration_days, duration_nights,
-        price, offer_price, discount_percent, max_seats, available_seats, vehicle_type_id, pickup_point,
-        short_description, full_description, itinerary, inclusions, exclusions, terms_conditions,
-        cover_image, gallery, featured, is_active, booking_open, meta_title, meta_description, meta_keywords, sort_order, title_hi, short_description_hi, full_description_hi, highlights, highlights_hi, itinerary_hi, inclusions_hi, exclusions_hi, terms_conditions_hi, route_map_image
-      `)
-      .eq('id', params.id)
-      .single()
+    try {
+      const { data, error } = await supabase
+        .from('packages')
+        .select('*')
+        .eq('id', params.id)
+        .single()
 
-    if (error) { toast.error('Failed to load package: ' + error.message); setLoading(false); return }
+      if (error) {
+        toast.error('Failed to load package: ' + error.message)
+        return
+      }
 
-    if (data) {
-      const d = data as any
-      setForm({
-        title:             d.title             || '',
-        slug:              d.slug              || '',
-        destination_id:    d.destination_id    || null,
-        destination_name:  d.destination_name  || '',
-        category:          d.category          || 'Religious Places',
-        duration:          d.duration          || '',
-        duration_days:     d.duration_days     || 1,
-        duration_nights:   d.duration_nights   || 0,
-        price:             d.price             ?? '',
-        offer_price:       d.offer_price       ?? '',
-        discount_percent:  d.discount_percent  ?? 0,
-        max_seats:         d.max_seats         ?? 10,
-        available_seats:   d.available_seats   ?? 10,
-        vehicle_type_id:   d.vehicle_type_id   || null,
-        pickup_point:      d.pickup_point      || '',
-        short_description: d.short_description || '',
-        full_description:  d.full_description  || '',
-        itinerary:         Array.isArray(d.itinerary) ? d.itinerary.join('\n') : (d.itinerary || ''),
-        inclusions:        Array.isArray(d.inclusions) ? d.inclusions.join('\n') : (d.inclusions || ''),
-        exclusions:        Array.isArray(d.exclusions) ? d.exclusions.join('\n') : (d.exclusions || ''),
-        terms_conditions:  d.terms_conditions  || '',
-        cover_image:       d.cover_image       || '',
-        gallery:           Array.isArray(d.gallery) ? d.gallery : [],
-        featured:          d.featured          ?? false,
-        is_active:         d.is_active         ?? true,
-        booking_open:      d.booking_open      ?? true,
-        meta_title:        d.meta_title        || '',
-        meta_description:  d.meta_description  || '',
-        meta_keywords:     d.meta_keywords     || '',
-        sort_order:        d.sort_order        ?? 0,
-      } as any)
+      if (data) {
+        const d = data as any
+        setForm({
+          title:                d.title                || '',
+          slug:                 d.slug                 || '',
+          destination_id:       d.destination_id       || null,
+          destination_name:     d.destination_name     || '',
+          category:             d.category             || 'Religious Places',
+          duration:             d.duration             || '',
+          duration_days:        d.duration_days        ?? 1,
+          duration_nights:      d.duration_nights      ?? 0,
+          price:                d.price                ?? '',
+          offer_price:          d.offer_price          ?? '',
+          discount_percent:     d.discount_percent     ?? 0,
+          max_seats:            d.max_seats            ?? 10,
+          available_seats:      d.available_seats      ?? 10,
+          vehicle_type_id:      d.vehicle_type_id      || null,
+          pickup_point:         d.pickup_point         || '',
+          short_description:    d.short_description   || '',
+          full_description:     d.full_description    || '',
+          itinerary:            toTextarea(d.itinerary),
+          inclusions:           toTextarea(d.inclusions),
+          exclusions:           toTextarea(d.exclusions),
+          terms_conditions:     d.terms_conditions     || '',
+          cover_image:          d.cover_image          || '',
+          gallery:              Array.isArray(d.gallery) ? d.gallery : [],
+          featured:             d.featured             ?? false,
+          is_active:            d.is_active            ?? true,
+          booking_open:         d.booking_open         ?? true,
+          meta_title:           d.meta_title           || '',
+          meta_description:     d.meta_description     || '',
+          meta_keywords:        d.meta_keywords        || '',
+          sort_order:           d.sort_order           ?? 0,
+          title_hi:             d.title_hi             || '',
+          short_description_hi: d.short_description_hi || '',
+          full_description_hi:  d.full_description_hi  || '',
+          highlights:           toTextarea(d.highlights),
+          highlights_hi:        toTextarea(d.highlights_hi),
+          itinerary_hi:         toTextarea(d.itinerary_hi),
+          inclusions_hi:        toTextarea(d.inclusions_hi),
+          exclusions_hi:        toTextarea(d.exclusions_hi),
+          terms_conditions_hi:  d.terms_conditions_hi  || '',
+          route_map_image:      d.route_map_image      || '',
+        })
+      }
+    } catch (err: any) {
+      console.error('Error in loadPackage:', err)
+      toast.error('Unexpected error loading package')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   const set = (field: keyof PackageForm, value: any) =>
@@ -142,63 +169,79 @@ export default function PackageFormPage() {
     e.preventDefault()
     setSaving(true)
 
-    // Explicit payload mapping to exactly match the database schema
-    const payload = {
-      title_hi: form.title_hi,
-      short_description_hi: form.short_description_hi,
-      full_description_hi: form.full_description_hi,
-      highlights: form.highlights.split('\n').map(s=>s.trim()).filter(Boolean),
-      highlights_hi: form.highlights_hi.split('\n').map(s=>s.trim()).filter(Boolean),
-      itinerary_hi: form.itinerary_hi.split('\n').map(s=>s.trim()).filter(Boolean),
-      inclusions_hi: form.inclusions_hi.split('\n').map(s=>s.trim()).filter(Boolean),
-      exclusions_hi: form.exclusions_hi.split('\n').map(s=>s.trim()).filter(Boolean),
-      terms_conditions_hi: form.terms_conditions_hi,
-      route_map_image: form.route_map_image,
-      title:             form.title,
-      slug:              form.slug || form.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
-      destination_id:    form.destination_id,
-      destination_name:  form.destination_name,
-      category:          form.category,
-      duration:          form.duration,
-      duration_days:     Number(form.duration_days) || 0,
-      duration_nights:   Number(form.duration_nights) || 0,
-      price:             Number(form.price) || 0,
-      offer_price:       form.offer_price ? Number(form.offer_price) : null,
-      discount_percent:  Number(form.discount_percent) || 0,
-      max_seats:         Number(form.max_seats) || 0,
-      available_seats:   Number(form.available_seats) || 0,
-      vehicle_type_id:   form.vehicle_type_id,
-      pickup_point:      form.pickup_point,
-      short_description: form.short_description,
-      full_description:  form.full_description,
-      itinerary:         form.itinerary.split('\n').map(s => s.trim()).filter(Boolean),
-      inclusions:        form.inclusions.split('\n').map(s => s.trim()).filter(Boolean),
-      exclusions:        form.exclusions.split('\n').map(s => s.trim()).filter(Boolean),
-      terms_conditions:  form.terms_conditions,
-      cover_image:       form.cover_image,
-      gallery:           form.gallery,
-      featured:          form.featured,
-      is_active:         form.is_active,
-      booking_open:      form.booking_open,
-      meta_title:        form.meta_title,
-      meta_description:  form.meta_description,
-      meta_keywords:     form.meta_keywords,
-      sort_order:        Number(form.sort_order) || 0,
-    }
-
-    console.log('--- PACKAGE UPDATE START ---')
-    console.log('packageId (params.id):', params.id)
-    console.log('Payload:', payload)
-
     try {
+      if (!form.title || !form.title.trim()) {
+        toast.error('Package Title is required')
+        return
+      }
+
+      if (!form.destination_name || !form.destination_name.trim()) {
+        toast.error('Destination Name is required')
+        return
+      }
+
+      if (form.price === '' || isNaN(Number(form.price))) {
+        toast.error('Please enter a valid regular price')
+        return
+      }
+
+      // Explicit payload mapping to exactly match the database schema
+      const payload = {
+        title:                form.title.trim(),
+        slug:                 (form.slug || form.title).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
+        destination_id:       form.destination_id || null,
+        destination_name:     form.destination_name.trim(),
+        category:             form.category || 'Religious Places',
+        duration:             form.duration || '',
+        duration_days:        Number(form.duration_days) || 0,
+        duration_nights:      Number(form.duration_nights) || 0,
+        price:                Number(form.price) || 0,
+        offer_price:          form.offer_price !== '' && form.offer_price !== null ? Number(form.offer_price) : null,
+        discount_percent:     Number(form.discount_percent) || 0,
+        max_seats:            Number(form.max_seats) || 0,
+        available_seats:      Number(form.available_seats) || 0,
+        vehicle_type_id:      form.vehicle_type_id || null,
+        pickup_point:         form.pickup_point || '',
+        short_description:    form.short_description || '',
+        full_description:     form.full_description || '',
+        itinerary:            toArray(form.itinerary),
+        inclusions:           toArray(form.inclusions),
+        exclusions:           toArray(form.exclusions),
+        terms_conditions:     form.terms_conditions || '',
+        cover_image:          form.cover_image || '',
+        gallery:              Array.isArray(form.gallery) ? form.gallery : [],
+        featured:             Boolean(form.featured),
+        is_active:            Boolean(form.is_active),
+        booking_open:         Boolean(form.booking_open),
+        meta_title:           form.meta_title || '',
+        meta_description:     form.meta_description || '',
+        meta_keywords:        form.meta_keywords || '',
+        sort_order:           Number(form.sort_order) || 0,
+        title_hi:             form.title_hi || '',
+        short_description_hi: form.short_description_hi || '',
+        full_description_hi:  form.full_description_hi || '',
+        highlights:           toArray(form.highlights),
+        highlights_hi:        toArray(form.highlights_hi),
+        itinerary_hi:         toArray(form.itinerary_hi),
+        inclusions_hi:        toArray(form.inclusions_hi),
+        exclusions_hi:        toArray(form.exclusions_hi),
+        terms_conditions_hi:  form.terms_conditions_hi || '',
+        route_map_image:      form.route_map_image || '',
+        updated_at:           new Date().toISOString(),
+      }
+
+      console.log('--- PACKAGE UPDATE START ---')
+      console.log('packageId (params.id):', params.id)
+      console.log('Payload:', payload)
+
       if (isNew) {
         const { data, error } = await supabase.from('packages').insert(payload).select()
         console.log('Supabase Insert Response:', { data, error })
         if (error) throw error
         if (!data || data.length === 0) {
-          throw new Error('Insert failed: 0 rows inserted. Check if RLS policy blocked INSERT.')
+          throw new Error('Insert failed: 0 rows inserted. Check permissions.')
         }
-        toast.success('Package created!')
+        toast.success('Package created successfully!')
         router.push('/dashboard/packages')
       } else {
         const { data, error } = await supabase.from('packages').update(payload).eq('id', params.id).select()
@@ -206,15 +249,15 @@ export default function PackageFormPage() {
         
         if (error) throw error
         if (!data || data.length === 0) {
-          throw new Error('Update failed: 0 rows modified. Check if ID exists or RLS policy blocked UPDATE.')
+          throw new Error('Update failed: 0 rows modified. Check if package ID exists or permissions.')
         }
         
         toast.success('Package updated successfully!')
-        window.location.href = '/dashboard/packages'
+        router.push('/dashboard/packages')
       }
     } catch (err: any) {
       console.error('Save error:', err)
-      toast.error(err.message || 'Unknown error occurred')
+      toast.error(err.message || 'Unable to save package. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -262,14 +305,19 @@ export default function PackageFormPage() {
         </div>
         
         {/* Basic Info */}
-
         <div className="card space-y-4">
-          <h2 className="font-bold" style={{ color: 'var(--foreground)' }}>Basic Information</h2>
+          <h2 className="font-bold" style={{ color: 'var(--foreground)' }}>
+            {langTab === 'hi' ? 'बुनियादी जानकारी (Basic Information - Hindi)' : 'Basic Information'}
+          </h2>
           
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <label>Package Title *</label>
-              <input value={form.title} onChange={e => set('title', e.target.value)} required placeholder="Ayodhya Darshan Package" />
+              <label>{langTab === 'hi' ? 'पैकेज शीर्षक (Package Title - Hindi)' : 'Package Title *'}</label>
+              {langTab === 'hi' ? (
+                <input value={form.title_hi} onChange={e => set('title_hi', e.target.value)} placeholder="अयोध्या दर्शन टूर पैकेज" />
+              ) : (
+                <input value={form.title} onChange={e => set('title', e.target.value)} required placeholder="Ayodhya Darshan Package" />
+              )}
             </div>
             <div>
               <label>URL Slug</label>
@@ -282,8 +330,7 @@ export default function PackageFormPage() {
             <div>
               <label>Category</label>
               <select value={form.category} onChange={e => set('category', e.target.value)}>
-                <option>Religious Places</option>
-                <option>Adventure</option>
+                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div>
@@ -297,73 +344,121 @@ export default function PackageFormPage() {
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label>Days</label>
-                <input type="number" value={form.duration_days} onChange={e => set('duration_days', e.target.value)} />
+                <input type="number" min="0" value={form.duration_days} onChange={e => set('duration_days', e.target.value)} />
               </div>
               <div>
                 <label>Nights</label>
-                <input type="number" value={form.duration_nights} onChange={e => set('duration_nights', e.target.value)} />
+                <input type="number" min="0" value={form.duration_nights} onChange={e => set('duration_nights', e.target.value)} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label>Max Seats</label>
-                <input type="number" value={form.max_seats} onChange={e => set('max_seats', e.target.value)} />
+                <input type="number" min="1" value={form.max_seats} onChange={e => set('max_seats', e.target.value)} />
               </div>
               <div>
                 <label>Available Seats</label>
-                <input type="number" value={form.available_seats} onChange={e => set('available_seats', e.target.value)} />
+                <input type="number" min="0" value={form.available_seats} onChange={e => set('available_seats', e.target.value)} />
               </div>
             </div>
           </div>
 
-          <div>
-            <label>Short Description (shown on cards)</label>
-            <textarea rows={2} value={form.short_description} onChange={e => set('short_description', e.target.value)} placeholder="Brief summary shown on listing page..." />
-          </div>
-          <div>
-            <label>Full Description (shown on details page)</label>
-            <textarea rows={5} value={form.full_description} onChange={e => set('full_description', e.target.value)} placeholder="Detailed overview..." />
-          </div>
-          <div>
-            <label>Itinerary (Day by Day)</label>
-            <textarea rows={5} value={form.itinerary} onChange={e => set('itinerary', e.target.value)} placeholder="Day 1: Arrival...&#10;Day 2: Sightseeing..." />
-          </div>
+          {langTab === 'hi' ? (
+            <>
+              <div>
+                <label>संक्षिप्त विवरण (Short Description - Hindi)</label>
+                <textarea rows={2} value={form.short_description_hi} onChange={e => set('short_description_hi', e.target.value)} placeholder="संक्षिप्त विवरण..." />
+              </div>
+              <div>
+                <label>विस्तृत विवरण (Full Description - Hindi)</label>
+                <textarea rows={5} value={form.full_description_hi} onChange={e => set('full_description_hi', e.target.value)} placeholder="विस्तृत विवरण..." />
+              </div>
+              <div>
+                <label>यात्रा कार्यक्रम (Itinerary - Hindi, 1 per line)</label>
+                <textarea rows={5} value={form.itinerary_hi} onChange={e => set('itinerary_hi', e.target.value)} placeholder="दिन 1: आगमन...&#10;दिन 2: दर्शन..." />
+              </div>
+              <div>
+                <label>मुख्य आकर्षण (Highlights - Hindi, 1 per line)</label>
+                <textarea rows={3} value={form.highlights_hi} onChange={e => set('highlights_hi', e.target.value)} placeholder="राम जन्मभूमि दर्शन&#10;हनुमान गढ़ी आरती" />
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <label>Short Description (shown on cards)</label>
+                <textarea rows={2} value={form.short_description} onChange={e => set('short_description', e.target.value)} placeholder="Brief summary shown on listing page..." />
+              </div>
+              <div>
+                <label>Full Description (shown on details page)</label>
+                <textarea rows={5} value={form.full_description} onChange={e => set('full_description', e.target.value)} placeholder="Detailed overview..." />
+              </div>
+              <div>
+                <label>Itinerary (Day by Day, 1 per line)</label>
+                <textarea rows={5} value={form.itinerary} onChange={e => set('itinerary', e.target.value)} placeholder="Day 1: Arrival and Temple Visit&#10;Day 2: Sightseeing and Return" />
+              </div>
+              <div>
+                <label>Highlights (1 per line)</label>
+                <textarea rows={3} value={form.highlights} onChange={e => set('highlights', e.target.value)} placeholder="VIP Temple Darshan&#10;Comfortable AC Cab" />
+              </div>
+            </>
+          )}
         </div>
 
-        {/* Pricing & Offers */}
+        {/* Pricing & Availability */}
         <div className="card space-y-4">
           <h2 className="font-bold" style={{ color: 'var(--foreground)' }}>Pricing & Availability</h2>
           <div className="grid md:grid-cols-3 gap-4">
             <div>
               <label>Regular Price (₹) *</label>
-              <input type="number" value={form.price} onChange={e => set('price', e.target.value)} required placeholder="2999" />
+              <input type="number" min="0" value={form.price} onChange={e => set('price', e.target.value)} required placeholder="2999" />
             </div>
             <div>
               <label>Offer Price (₹)</label>
-              <input type="number" value={form.offer_price} onChange={e => set('offer_price', e.target.value)} placeholder="2499" />
+              <input type="number" min="0" value={form.offer_price} onChange={e => set('offer_price', e.target.value)} placeholder="2499" />
             </div>
             <div>
               <label>Discount Percent (%)</label>
-              <input type="number" value={form.discount_percent} onChange={e => set('discount_percent', e.target.value)} placeholder="15" />
+              <input type="number" min="0" max="100" value={form.discount_percent} onChange={e => set('discount_percent', e.target.value)} placeholder="15" />
             </div>
           </div>
         </div>
 
         {/* Inclusions & Terms */}
         <div className="card space-y-4">
-          <h2 className="font-bold" style={{ color: 'var(--foreground)' }}>Inclusions & Exclusions</h2>
-          <div>
-            <label>Package Inclusions</label>
-            <textarea rows={4} value={form.inclusions} onChange={e => set('inclusions', e.target.value)} placeholder={'AC Transport\nHotel stay\nBreakfast'} />
-          </div>
-          <div>
-            <label>Package Exclusions</label>
-            <textarea rows={3} value={form.exclusions} onChange={e => set('exclusions', e.target.value)} placeholder={'Personal expenses\nEntry fees'} />
-          </div>
-          <div>
-            <label>Terms & Conditions</label>
-            <textarea rows={3} value={form.terms_conditions} onChange={e => set('terms_conditions', e.target.value)} placeholder="Cancellation policies..." />
-          </div>
+          <h2 className="font-bold" style={{ color: 'var(--foreground)' }}>
+            {langTab === 'hi' ? 'शामिल और बहिष्कृत (Inclusions & Terms - Hindi)' : 'Inclusions & Exclusions'}
+          </h2>
+          {langTab === 'hi' ? (
+            <>
+              <div>
+                <label>शामिल सुविधाएं (Inclusions - Hindi, 1 per line)</label>
+                <textarea rows={4} value={form.inclusions_hi} onChange={e => set('inclusions_hi', e.target.value)} placeholder={'एसी वाहन\nहोटल में रुकना\nनाश्ता'} />
+              </div>
+              <div>
+                <label>शामिल नहीं (Exclusions - Hindi, 1 per line)</label>
+                <textarea rows={3} value={form.exclusions_hi} onChange={e => set('exclusions_hi', e.target.value)} placeholder={'व्यक्तिगत खर्च\nप्रवेश शुल्क'} />
+              </div>
+              <div>
+                <label>नियम और शर्तें (Terms & Conditions - Hindi)</label>
+                <textarea rows={3} value={form.terms_conditions_hi} onChange={e => set('terms_conditions_hi', e.target.value)} placeholder="रद्दीकरण नीतियां..." />
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <label>Package Inclusions (1 per line)</label>
+                <textarea rows={4} value={form.inclusions} onChange={e => set('inclusions', e.target.value)} placeholder={'AC Transport\nHotel stay\nBreakfast'} />
+              </div>
+              <div>
+                <label>Package Exclusions (1 per line)</label>
+                <textarea rows={3} value={form.exclusions} onChange={e => set('exclusions', e.target.value)} placeholder={'Personal expenses\nEntry fees'} />
+              </div>
+              <div>
+                <label>Terms & Conditions</label>
+                <textarea rows={3} value={form.terms_conditions} onChange={e => set('terms_conditions', e.target.value)} placeholder="Cancellation policies..." />
+              </div>
+            </>
+          )}
         </div>
 
         {/* SEO */}
@@ -417,7 +512,7 @@ export default function PackageFormPage() {
               ['booking_open', 'Booking Open'],
             ] as [keyof PackageForm, string][]).map(([key, label]) => (
               <label key={key} className="flex items-center gap-2 cursor-pointer" style={{ margin: 0 }}>
-                <input type="checkbox" checked={form[key] as boolean}
+                <input type="checkbox" checked={Boolean(form[key])}
                   onChange={e => set(key, e.target.checked)}
                   style={{ width: '18px', height: '18px' }} />
                 <span className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>{label}</span>
