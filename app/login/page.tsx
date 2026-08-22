@@ -66,7 +66,13 @@ export default function LoginPage() {
       <div className="relative w-full max-w-md mx-4 fade-in">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-orange-500 flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4 shadow-2xl">S</div>
+          <div className="w-24 h-24 mx-auto mb-3 flex items-center justify-center">
+            <img
+              src="/logo.png"
+              alt="Saanvi Royal Travels Logo"
+              className="max-h-full max-w-full object-contain filter drop-shadow-xl"
+            />
+          </div>
           <h1 className="text-2xl font-bold text-white">Saanvi Royal Travels</h1>
           <p className="text-blue-300 text-sm mt-1 flex items-center justify-center gap-1">
             <Shield size={13} /> Admin Panel

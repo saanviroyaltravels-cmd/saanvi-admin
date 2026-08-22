@@ -69,10 +69,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       )} style={{ width: '260px', background: 'var(--card)', borderRight: '1px solid var(--border)' }}>
 
         {/* Logo */}
-        <div className="flex items-center gap-3 px-5 py-5 border-b" style={{ borderColor: 'var(--border)' }}>
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-orange-500 flex items-center justify-center text-white font-bold text-base flex-shrink-0">S</div>
+        <div className="flex items-center gap-3 px-5 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
+          <img
+            src="/logo.png"
+            alt="Saanvi Royal Travels Logo"
+            className="w-10 h-10 object-contain flex-shrink-0"
+          />
           <div className="min-w-0">
-            <p className="font-bold text-sm" style={{ color: 'var(--foreground)' }}>Saanvi Royal</p>
+            <p className="font-bold text-sm leading-tight" style={{ color: 'var(--foreground)' }}>Saanvi Royal</p>
             <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Admin Panel</p>
           </div>
           <button onClick={() => setSidebarOpen(false)} className="ml-auto lg:hidden" style={{ color: 'var(--muted-foreground)' }}><X size={18} /></button>
