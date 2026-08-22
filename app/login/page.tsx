@@ -65,12 +65,13 @@ export default function LoginPage() {
 
       <div className="relative w-full max-w-md mx-4 fade-in">
         {/* Logo */}
-        <div className="text-center mb-8 flex flex-col items-center justify-center">
-          <div className="w-24 h-24 mb-3 flex items-center justify-center">
+        <div className="text-center mb-8 flex flex-col items-center justify-center" style={{ textAlign: 'center', marginBottom: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="w-24 h-24 mb-3 flex items-center justify-center" style={{ width: '96px', height: '96px', margin: '0 auto 12px auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <img
               src="/logo.png"
               alt="Saanvi Royal Travels Logo"
               className="max-h-full max-w-full object-contain filter drop-shadow-xl"
+              style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain', display: 'block', margin: '0 auto' }}
             />
           </div>
           <h1 className="text-2xl font-bold text-white">Saanvi Royal Travels</h1>

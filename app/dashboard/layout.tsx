@@ -74,6 +74,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             src="/logo.png"
             alt="Saanvi Royal Travels Logo"
             className="w-10 h-10 object-contain flex-shrink-0"
+            style={{ width: '40px', height: '40px', objectFit: 'contain', flexShrink: 0 }}
           />
           <div className="min-w-0">
             <p className="font-bold text-sm leading-tight" style={{ color: 'var(--foreground)' }}>Saanvi Royal</p>
