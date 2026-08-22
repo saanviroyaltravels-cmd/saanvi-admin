@@ -417,15 +417,122 @@ export default function InquiriesPage() {
                 </div>
 
                 {/* Middle: Customer Message Box */}
-                <div className="my-3.5 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200/70 dark:border-slate-800">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
-                    <MessageSquare size={13} />
-                    <span>Customer Message / ग्राहक का संदेश:</span>
+                {inq.type === 'custom_trip' || (inq.message && inq.message.includes('CUSTOM PACKAGE ENQUIRY')) ? (
+                  <div className="my-3.5 rounded-2xl bg-slate-950 text-white p-4 sm:p-5 border border-slate-700/80 shadow-md space-y-4">
+                    {/* Header Banner */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-800">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                          ✨ CUSTOM PACKAGE ENQUIRY
+                        </span>
+                        <span className="text-xs font-semibold text-slate-300">Apna Tour Banaye</span>
+                      </div>
+                      {inq.subject && (
+                        <span className="text-xs font-medium text-slate-400">
+                          {inq.subject}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Formatted Content Lines */}
+                    <div className="space-y-3 text-xs sm:text-sm">
+                      {(inq.message || '').split('\n').map((line, idx) => {
+                        const trimmed = line.trim()
+                        if (!trimmed) return null
+
+                        // Separator line
+                        if (trimmed.startsWith('---')) {
+                          return <hr key={idx} className="border-slate-800 my-2" />
+                        }
+
+                        // Section Titles (Headers)
+                        if (
+                          trimmed.includes('ROUTE & STOPS') ||
+                          trimmed.includes('TRAVELERS BREAKDOWN') ||
+                          trimmed.includes('HOTEL ACCOMMODATION') ||
+                          trimmed.includes('INTERNAL ESTIMATE') ||
+                          trimmed.includes('Customer Notes')
+                        ) {
+                          const isEstimate = trimmed.includes('INTERNAL ESTIMATE')
+                          return (
+                            <div
+                              key={idx}
+                              className={`pt-2.5 pb-1 font-bold text-xs uppercase tracking-wider flex items-center gap-2 ${
+                                isEstimate ? 'text-emerald-400 font-extrabold' : 'text-amber-400'
+                              }`}
+                            >
+                              <span>{trimmed}</span>
+                            </div>
+                          )
+                        }
+
+                        // Bullet Points
+                        if (trimmed.startsWith('•') || trimmed.startsWith('-')) {
+                          const [label, ...valParts] = trimmed.replace(/^[•-]\s*/, '').split(':')
+                          const value = valParts.join(':').trim()
+                          const isTotal = label.includes('Total') || label.includes('Est. Total')
+
+                          return (
+                            <div
+                              key={idx}
+                              className={`flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 py-1.5 px-3 rounded-lg ${
+                                isTotal
+                                  ? 'bg-emerald-950/80 border border-emerald-500/40 text-emerald-200 font-bold'
+                                  : 'bg-slate-900 border border-slate-800 text-slate-100'
+                              }`}
+                            >
+                              <span className="font-semibold text-slate-300 flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                {label}:
+                              </span>
+                              <span className={`text-white font-medium ${isTotal ? 'text-emerald-300 font-bold text-sm sm:text-base' : ''}`}>
+                                {value}
+                              </span>
+                            </div>
+                          )
+                        }
+
+                        // Key Value pairs (e.g. 👤 Customer Name: ..., 📱 Mobile: ...)
+                        if (trimmed.includes(':') && !trimmed.startsWith('"')) {
+                          const [label, ...valParts] = trimmed.split(':')
+                          const value = valParts.join(':').trim()
+                          return (
+                            <div key={idx} className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 py-1 px-1.5">
+                              <span className="text-slate-400 font-medium">{label}:</span>
+                              <span className="text-white font-semibold">{value}</span>
+                            </div>
+                          )
+                        }
+
+                        // Quote / Notes block
+                        if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
+                          return (
+                            <div key={idx} className="p-3 rounded-xl bg-slate-900 border border-slate-800 italic text-slate-200">
+                              {trimmed}
+                            </div>
+                          )
+                        }
+
+                        // Default text line
+                        return (
+                          <p key={idx} className="text-slate-100 font-medium">
+                            {trimmed}
+                          </p>
+                        )
+                      })}
+                    </div>
                   </div>
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap font-medium" style={{ color: 'var(--foreground)' }}>
-                    {inq.message || '(No message provided)'}
-                  </p>
-                </div>
+                ) : (
+                  <div className="my-3.5 p-4 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">
+                      <MessageSquare size={14} className="text-blue-500" />
+                      <span>Customer Message / ग्राहक का संदेश:</span>
+                    </div>
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap font-semibold text-slate-900 dark:text-slate-100">
+                      {inq.message || '(No message provided)'}
+                    </p>
+                  </div>
+                )}
 
                 {/* Bottom: Contact Details & Action Buttons */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
