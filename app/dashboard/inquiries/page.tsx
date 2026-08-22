@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import {
   Search, Phone, MessageCircle, Mail, Trash2, CheckCircle2,
   Clock, RefreshCw, Filter, AlertCircle, ChevronDown, Check, X,
-  Inbox, Calendar, User, MessageSquare
+  Inbox, Calendar, User, MessageSquare, AlertTriangle
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -31,6 +31,8 @@ export default function InquiriesPage() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [deleteModal, setDeleteModal] = useState<{ id: string; name: string; message: string } | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     loadInquiries()
@@ -62,7 +64,7 @@ export default function InquiriesPage() {
     setUpdatingId(id)
     try {
       const isReplied = newStatus === 'resolved' || newStatus === 'closed'
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('enquiries')
         .update({
           status: newStatus,
@@ -70,8 +72,13 @@ export default function InquiriesPage() {
           updated_at: new Date().toISOString()
         })
         .eq('id', id)
+        .select()
 
       if (error) throw error
+
+      if (!data || data.length === 0) {
+        throw new Error('Status update नहीं हो सका। RLS permission check करें।')
+      }
 
       setInquiries(prev => prev.map(item =>
         item.id === id ? { ...item, status: newStatus, replied: isReplied } : item
@@ -93,22 +100,32 @@ export default function InquiriesPage() {
     }
   }
 
-  async function deleteInquiry(id: string, name: string) {
-    if (!confirm(`Are you sure you want to delete inquiry from "${name || 'Customer'}"?`)) return
+  async function handleConfirmDelete() {
+    if (!deleteModal) return
+    setIsDeleting(true)
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('enquiries')
         .delete()
-        .eq('id', id)
+        .eq('id', deleteModal.id)
+        .select()
 
       if (error) throw error
 
-      setInquiries(prev => prev.filter(item => item.id !== id))
-      toast.success('Inquiry deleted successfully')
+      if (!data || data.length === 0) {
+        throw new Error('0 rows deleted in database. Supabase RLS policy might be missing DELETE permission.')
+      }
+
+      // ONLY remove from UI when database deletion is confirmed
+      setInquiries(prev => prev.filter(item => item.id !== deleteModal.id))
+      toast.success('Enquiry permanently deleted.')
+      setDeleteModal(null)
     } catch (err: any) {
-      console.error('Error deleting inquiry:', err)
-      toast.error('Failed to delete: ' + err.message)
+      console.error('Error permanently deleting inquiry:', err)
+      toast.error('Enquiry delete नहीं हो सकी। कृपया दोबारा कोशिश करें। (' + (err.message || '') + ')')
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -374,7 +391,7 @@ export default function InquiriesPage() {
                     </div>
                   </div>
 
-                  {/* Quick Status Changer Dropdown */}
+                  {/* Quick Status Changer Dropdown & Delete Button */}
                   <div className="flex items-center gap-2 self-end sm:self-center">
                     <select
                       value={inq.status || 'open'}
@@ -390,9 +407,9 @@ export default function InquiriesPage() {
                     </select>
 
                     <button
-                      onClick={() => deleteInquiry(inq.id, inq.name)}
-                      className="p-2 rounded-lg hover:bg-red-50 text-red-500 transition"
-                      title="Delete Inquiry"
+                      onClick={() => setDeleteModal({ id: inq.id, name: inq.name || 'Customer', message: inq.message || '' })}
+                      className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40 text-red-500 transition"
+                      title="Delete Inquiry permanently"
                     >
                       <Trash2 size={16} />
                     </button>
@@ -468,6 +485,70 @@ export default function InquiriesPage() {
           })
         )}
       </div>
+
+      {/* Permanent Delete Confirmation Modal */}
+      {deleteModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div
+            className="card max-w-md w-full p-6 shadow-2xl border border-red-200 dark:border-red-900/50 animate-in fade-in zoom-in duration-150"
+            style={{ background: 'var(--card)' }}
+          >
+            <div className="flex items-start gap-3.5 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-950/80 text-red-600 dark:text-red-400 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle size={20} />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-red-600 dark:text-red-400">
+                  Delete Inquiry Permanently
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  यह पूछताछ database से हमेशा के लिए delete हो जाएगी।
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs mb-5 space-y-1">
+              <p className="font-semibold text-slate-800 dark:text-slate-200">
+                ग्राहक: <span className="font-bold">{deleteModal.name}</span>
+              </p>
+              <p className="text-slate-600 dark:text-slate-400 line-clamp-2 italic">
+                "{deleteModal.message}"
+              </p>
+            </div>
+
+            <p className="text-sm font-medium mb-6 text-slate-700 dark:text-slate-300">
+              क्या आप इस enquiry को permanently delete करना चाहते हैं?
+            </p>
+
+            <div className="flex items-center justify-end gap-3">
+              <button
+                onClick={() => !isDeleting && setDeleteModal(null)}
+                disabled={isDeleting}
+                className="btn-ghost px-4 py-2 text-xs font-semibold rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-bold text-xs rounded-lg transition flex items-center gap-2 shadow-xs"
+              >
+                {isDeleting ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full spinner" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={14} />
+                    <span>Delete</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
