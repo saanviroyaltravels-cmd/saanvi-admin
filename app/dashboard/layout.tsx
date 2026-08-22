@@ -7,12 +7,14 @@ import { toast } from 'sonner'
 import {
   LayoutDashboard, Package, Tag, Bell, MessageSquare, BookOpen,
   Users, Settings, Image, Search, LogOut, Menu, X, Sun, Moon,
-  ChevronDown, ExternalLink, BarChart2, Megaphone, DollarSign, Library
+  ChevronDown, ExternalLink, BarChart2, Megaphone, DollarSign, Library,
+  Inbox
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { href: '/dashboard/inquiries', icon: Inbox, label: 'Inquiries', badgeKey: 'inquiries' },
   { href: '/dashboard/packages', icon: Package, label: 'Tour Packages' },
   { href: '/dashboard/pricing', icon: DollarSign, label: 'Price Management' },
   { href: '/dashboard/bookings', icon: BookOpen, label: 'Bookings' },
@@ -33,6 +35,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [dark, setDark] = useState(false)
   const [user, setUser] = useState<{ name: string; email: string } | null>(null)
+  const [newInquiriesCount, setNewInquiriesCount] = useState(0)
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -41,7 +44,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const savedDark = localStorage.getItem('admin-dark') === 'true'
     setDark(savedDark)
     if (savedDark) document.documentElement.classList.add('dark')
-  }, [])
+
+    loadUnreadInquiries()
+    const interval = setInterval(loadUnreadInquiries, 30000)
+    return () => clearInterval(interval)
+  }, [pathname])
+
+  async function loadUnreadInquiries() {
+    try {
+      const { count } = await supabase
+        .from('enquiries')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'open')
+      setNewInquiriesCount(count || 0)
+    } catch (e) {
+      // ignore
+    }
+  }
 
   const toggleDark = () => {
     const next = !dark
@@ -85,12 +104,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
-          {navItems.map(({ href, icon: Icon, label }) => (
+          {navItems.map(({ href, icon: Icon, label, badgeKey }) => (
             <Link key={href} href={href}
               onClick={() => setSidebarOpen(false)}
-              className={cn('sidebar-link', pathname === href && 'active')}>
-              <Icon size={17} />
-              {label}
+              className={cn('sidebar-link flex items-center justify-between', pathname === href && 'active')}>
+              <div className="flex items-center gap-2.5">
+                <Icon size={17} />
+                <span>{label}</span>
+              </div>
+              {badgeKey === 'inquiries' && newInquiriesCount > 0 && (
+                <span className="px-2 py-0.5 text-[11px] font-bold rounded-full bg-amber-500 text-white animate-pulse">
+                  {newInquiriesCount}
+                </span>
+              )}
             </Link>
           ))}
         </nav>
