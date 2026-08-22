@@ -65,8 +65,8 @@ export default function LoginPage() {
 
       <div className="relative w-full max-w-md mx-4 fade-in">
         {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="w-24 h-24 mx-auto mb-3 flex items-center justify-center">
+        <div className="text-center mb-8 flex flex-col items-center justify-center">
+          <div className="w-24 h-24 mb-3 flex items-center justify-center">
             <img
               src="/logo.png"
               alt="Saanvi Royal Travels Logo"
