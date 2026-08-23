@@ -27,7 +27,9 @@ export async function middleware(request: NextRequest) {
   // Protect all /dashboard routes
   if (path.startsWith('/dashboard')) {
     if (!user) {
-      return NextResponse.redirect(new URL('/login', request.url))
+      const redirectResponse = NextResponse.redirect(new URL('/login', request.url))
+      redirectResponse.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive')
+      return redirectResponse
     }
     // Check admin role
     const { data: profile } = await supabase
@@ -37,15 +39,20 @@ export async function middleware(request: NextRequest) {
       .single()
 
     if (!profile || !['admin', 'super_admin'].includes(profile.role_name)) {
-      return NextResponse.redirect(new URL('/unauthorized', request.url))
+      const redirectResponse = NextResponse.redirect(new URL('/unauthorized', request.url))
+      redirectResponse.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive')
+      return redirectResponse
     }
   }
 
   // Redirect logged-in admin away from login page
   if (path === '/login' && user) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    const redirectResponse = NextResponse.redirect(new URL('/dashboard', request.url))
+    redirectResponse.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive')
+    return redirectResponse
   }
 
+  supabaseResponse.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive')
   return supabaseResponse
 }
 
