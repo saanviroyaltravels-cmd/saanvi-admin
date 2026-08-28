@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Package, Tag, Bell, MessageSquare, BookOpen,
   Users, Settings, Image, Search, LogOut, Menu, X, Sun, Moon,
   ChevronDown, ExternalLink, BarChart2, Megaphone, DollarSign, Library,
-  Inbox
+  Inbox, FileText
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -18,6 +18,7 @@ const navItems = [
   { href: '/dashboard/packages', icon: Package, label: 'Tour Packages' },
   { href: '/dashboard/pricing', icon: DollarSign, label: 'Price Management' },
   { href: '/dashboard/bookings', icon: BookOpen, label: 'Bookings' },
+  { href: '/dashboard/invoices', icon: FileText, label: 'Invoices' },
   { href: '/dashboard/customers', icon: Users, label: 'Customers' },
   { href: '/dashboard/offers', icon: Tag, label: 'Special Offers' },
   { href: '/dashboard/media', icon: Library, label: 'Media Library' },
