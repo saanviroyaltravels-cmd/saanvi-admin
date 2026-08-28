@@ -329,15 +329,15 @@ export default function InvoiceTemplate({ data, printMode = false }: InvoiceTemp
           </div>
         </div>
         <div style={{ textAlign: 'center', flexShrink: 0 }}>
-          <div style={{ background: '#ffffff', border: '2px solid #cbd5e1', borderRadius: 8, padding: 6, display: 'inline-block', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+          <div style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: 8, padding: 8, display: 'inline-block', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
             <img
-              src={data.paymentQrUrl || '/sbi-payment-qr.jpeg'}
+              src={data.paymentQrUrl || '/sbi-payment-qr.png'}
               alt="SBI Payment QR - SAANVI ENTERPRISES"
-              style={{ width: 125, height: 165, objectFit: 'contain', borderRadius: 4, display: 'block' }}
+              style={{ width: 130, height: 130, objectFit: 'contain', borderRadius: 4, display: 'block' }}
               crossOrigin="anonymous"
             />
           </div>
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#1e3a8a', marginTop: 4, letterSpacing: '0.04em' }}>OFFICIAL SBI QR</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#1e3a8a', marginTop: 4, letterSpacing: '0.04em' }}>SCAN TO PAY (UPI)</div>
         </div>
       </div>
 

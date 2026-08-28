@@ -139,7 +139,7 @@ CREATE TABLE IF NOT EXISTS public.invoice_settings (
   udyam TEXT NOT NULL DEFAULT 'UDYAM-BR-35-0015333',
   default_gst_applicable BOOLEAN NOT NULL DEFAULT false,
   default_gst_rate NUMERIC NOT NULL DEFAULT 18,
-  payment_qr_url TEXT DEFAULT 'https://admin.saanvitravel.com/sbi-payment-qr.jpeg',
+  payment_qr_url TEXT DEFAULT 'https://admin.saanvitravel.com/sbi-payment-qr.png',
   invoice_terms TEXT DEFAULT 'Thank you for choosing Saanvi Royal Travels. We look forward to serving you again!',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -186,7 +186,7 @@ SELECT
   'UDYAM-BR-35-0015333',
   false,
   18,
-  'https://admin.saanvitravel.com/sbi-payment-qr.jpeg',
+  'https://admin.saanvitravel.com/sbi-payment-qr.png',
   'Thank you for choosing Saanvi Royal Travels. We look forward to serving you again!'
 WHERE NOT EXISTS (SELECT 1 FROM public.invoice_settings);
 
