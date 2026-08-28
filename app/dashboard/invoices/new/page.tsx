@@ -111,29 +111,55 @@ export default function NewInvoicePage() {
     const { count } = await supabase.from('invoices').select('id', { count: 'exact', head: true })
     setInvoiceNumber(generateInvoiceNumber((count || 0) + 1))
 
-    // Load site settings
+    // Load site_settings (business name, address, phone, email)
     const { data: settings } = await supabase.from('site_settings').select('setting_key,setting_value')
     if (settings) {
       const s: Record<string, string> = {}
       settings.forEach((r: any) => { s[r.setting_key] = r.setting_value })
-      setCompanySettings({
+      setCompanySettings(prev => ({
+        ...prev,
         companyName: s['business_name'] || COMPANY_DEFAULTS.companyName,
         companyAddress: s['office_address'] || COMPANY_DEFAULTS.companyAddress,
         companyPhone: s['phone'] && !s['phone'].includes('98765') ? s['phone'] : COMPANY_DEFAULTS.companyPhone,
         companyWhatsApp: s['whatsapp'] && !s['whatsapp'].includes('9876543210') ? s['whatsapp'] : COMPANY_DEFAULTS.companyWhatsApp,
         companyEmail: s['email'] && !s['email'].includes('info@saanviroyaltravels') ? s['email'] : COMPANY_DEFAULTS.companyEmail,
-        gstin: s['gstin'] || COMPANY_DEFAULTS.gstin,
-        udyam: s['udyam'] || COMPANY_DEFAULTS.udyam,
-      })
-      if (s['payment_qr_url']) setPaymentQrUrl(s['payment_qr_url'])
+      }))
+    }
+
+    // Load invoice_settings — GSTIN, Udyam, QR URL, GST defaults
+    // This is a SEPARATE table; does NOT use site_settings.category='invoice'
+    const { data: invSettings } = await supabase
+      .from('invoice_settings')
+      .select('*')
+      .limit(1)
+      .maybeSingle()
+    if (invSettings) {
+      setCompanySettings(prev => ({
+        ...prev,
+        gstin: invSettings.gstin || COMPANY_DEFAULTS.gstin,
+        udyam: invSettings.udyam || COMPANY_DEFAULTS.udyam,
+        companyAddress: invSettings.business_address || prev.companyAddress,
+        companyPhone: invSettings.business_phone || prev.companyPhone,
+        companyWhatsApp: invSettings.business_whatsapp || prev.companyWhatsApp,
+        companyEmail: invSettings.business_email || prev.companyEmail,
+      }))
+      if (invSettings.payment_qr_url) setPaymentQrUrl(invSettings.payment_qr_url)
     }
 
     // Load active offers
-    const { data: offers } = await supabase.from('offers').select('*').eq('is_active', true).order('priority').limit(1)
+    const { data: offers } = await supabase
+      .from('offers')
+      .select('*')
+      .eq('is_active', true)
+      .order('priority')
+      .limit(1)
     if (offers && offers.length > 0) setActiveOffer(offers[0])
 
     // Load all bookings for search
-    const { data: bks } = await supabase.from('bookings').select('*').order('created_at', { ascending: false })
+    const { data: bks } = await supabase
+      .from('bookings')
+      .select('*')
+      .order('created_at', { ascending: false })
     setBookings(bks || [])
   }, [supabase])
 
