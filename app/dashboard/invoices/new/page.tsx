@@ -85,8 +85,8 @@ export default function NewInvoicePage() {
   const [gstRate, setGstRate] = useState(18)
 
   // Extra
-  const [paymentQrUrl, setPaymentQrUrl] = useState('')
-  const [paymentNote, setPaymentNote] = useState('')
+  const [paymentQrUrl, setPaymentQrUrl] = useState('/sbi-payment-qr.jpeg')
+  const [paymentNote, setPaymentNote] = useState('Scan with any UPI App (GPay, PhonePe, Paytm, BHIM, Yono SBI) for instant payment.')
   const [notes, setNotes] = useState('')
 
   // Active offer (from DB)

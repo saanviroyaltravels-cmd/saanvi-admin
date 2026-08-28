@@ -313,27 +313,31 @@ export default function InvoiceTemplate({ data, printMode = false }: InvoiceTemp
       </div>
 
       {/* ═══ PAYMENT QR ══════════════════════════════════════════ */}
-      <div style={{ padding: '20px 32px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 24 }}>
+      <div style={{ padding: '18px 32px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 24, background: '#fafbfc' }}>
         <div style={{ flex: 1 }}>
           <div style={sectionTitle}>Scan &amp; Pay</div>
-          <div style={{ fontSize: 12, color: '#475569', lineHeight: 1.7 }}>
-            {data.paymentNote || 'Scan the QR code to make an instant payment.'}
+          <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a', marginBottom: 2, letterSpacing: '0.02em' }}>
+            SAANVI ENTERPRISES
+          </div>
+          <div style={{ fontSize: 12, color: '#1e40af', fontWeight: 700, marginBottom: 6 }}>
+            UPI ID: <span style={{ fontFamily: 'monospace', fontSize: 13, background: '#e0e7ff', padding: '2px 6px', borderRadius: 4, color: '#1e3a8a' }}>41212980663@sbi</span>
+          </div>
+          <div style={{ fontSize: 11, color: '#475569', lineHeight: 1.6 }}>
+            {data.paymentNote || 'Scan with any UPI App (GPay, PhonePe, Paytm, BHIM, Yono SBI) for instant payment.'}
             <br />
             <strong>WhatsApp:</strong> {data.companyWhatsApp}
           </div>
         </div>
-        <div style={{ textAlign: 'center' }}>
-          {data.paymentQrUrl ? (
-            <img src={data.paymentQrUrl} alt="Payment QR" style={{ width: 110, height: 110, objectFit: 'contain', border: '2px solid #e2e8f0', borderRadius: 8, padding: 4 }} crossOrigin="anonymous" />
-          ) : (
-            <div style={{ width: 110, height: 110, border: '2px dashed #94a3b8', borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
-              <div style={{ fontSize: 28 }}>📲</div>
-              <div style={{ fontSize: 9, color: '#64748b', marginTop: 4, textAlign: 'center', lineHeight: 1.4 }}>
-                QR Code<br />(Configure in Settings)
-              </div>
-            </div>
-          )}
-          <div style={{ fontSize: 10, color: '#64748b', marginTop: 4 }}>SCAN TO PAY</div>
+        <div style={{ textAlign: 'center', flexShrink: 0 }}>
+          <div style={{ background: '#ffffff', border: '2px solid #cbd5e1', borderRadius: 8, padding: 6, display: 'inline-block', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+            <img
+              src={data.paymentQrUrl || '/sbi-payment-qr.jpeg'}
+              alt="SBI Payment QR - SAANVI ENTERPRISES"
+              style={{ width: 125, height: 165, objectFit: 'contain', borderRadius: 4, display: 'block' }}
+              crossOrigin="anonymous"
+            />
+          </div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#1e3a8a', marginTop: 4, letterSpacing: '0.04em' }}>OFFICIAL SBI QR</div>
         </div>
       </div>
 
