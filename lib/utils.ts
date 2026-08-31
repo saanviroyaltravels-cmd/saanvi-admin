@@ -42,6 +42,7 @@ export function formatWhatsAppBookingMessage(booking: any): string {
   const serviceType = (booking.booking_type || 'Cab Service').replace(/_/g, ' ')
   const pickup = booking.pickup_address || booking.from_location || '—'
   const destination = booking.destination || booking.to_location || booking.package_name || '—'
+  
   let travelDate = '—'
   if (booking.travel_date) {
     try {
@@ -56,25 +57,97 @@ export function formatWhatsAppBookingMessage(booking: any): string {
       travelDate = String(booking.created_at)
     }
   }
+
   const travelTime = booking.pickup_time || booking.travel_time || ''
   const vehicle = booking.vehicle_type || booking.vehicle || ''
   const fareVal = booking.total_amount || booking.fare || 0
   const amount = fareVal ? formatCurrency(fareVal) : '₹0'
-  const status = booking.status || 'Pending'
+  const rawStatus = booking.status || 'Pending'
+  const normalizedStatus = String(rawStatus).trim().toLowerCase()
+  const offersUrl = 'https://saanvitravel.com/special-offers'
 
+  const detailsBlock = [
+    `📋 Booking ID: ${bookingNumber}`,
+    `🚕 Service: ${serviceType}`,
+    `📍 Pickup: ${pickup}`,
+    `📍 Destination: ${destination}`,
+    `📅 Date: ${travelDate}`,
+    travelTime ? `🕐 Time: ${travelTime}` : null,
+    vehicle ? `🚗 Vehicle: ${vehicle}` : null,
+    `💰 Total Fare: ${amount}`,
+    `📌 Status: ${rawStatus}`
+  ].filter(Boolean).join('\n')
+
+  if (normalizedStatus === 'confirmed') {
+    return `Namaste ${customerName} ji 🙏
+
+Good news! Aapki Saanvi Royal Travels booking confirm ho gayi hai. 🎉
+
+Yeh aapki confirmed booking details hain:
+
+${detailsBlock}
+
+Aapki booking ab confirm hai.
+
+Travel ke din hamari team/driver aapse required coordination ke liye contact karegi.
+
+Agar aapko kisi bhi tarah ki assistance chahiye, to humein WhatsApp par message karein.
+
+Saanvi Royal Travels ke saath booking karne ke liye dhanyavaad! 🙏
+
+📞 +91 9229764300
+
+⭐ Special Offers:
+${offersUrl}`
+  }
+
+  if (normalizedStatus === 'completed') {
+    return `Namaste ${customerName} ji 🙏
+
+Saanvi Royal Travels ke saath aapki journey complete ho gayi hai. 😊
+
+Humein umeed hai ki aapka travel experience achha raha.
+
+${detailsBlock}
+
+Saanvi Royal Travels ko choose karne ke liye dil se dhanyavaad! 🙏
+
+Aapka feedback aur future bookings hamare liye bahut important hain.
+
+📞 +91 9229764300
+
+⭐ Hamare latest Special Offers dekhein:
+${offersUrl}`
+  }
+
+  if (normalizedStatus === 'cancelled' || normalizedStatus === 'canceled') {
+    return `Namaste ${customerName} ji,
+
+Aapki Saanvi Royal Travels booking cancel kar di gayi hai.
+
+${detailsBlock}
+
+Agar aapne booking cancel nahi ki thi ya aapko kisi bhi assistance ki zarurat hai, to please humein WhatsApp par message karein.
+
+Hamari team aapki help karne ke liye available hai.
+
+Dhanyavaad,
+Saanvi Royal Travels
+
+📞 +91 9229764300
+
+⭐ Future booking aur Special Offers:
+${offersUrl}`
+  }
+
+  // Default / Pending Template
   return `Namaste ${customerName} ji 🙏
 
 Saanvi Royal Travels mein aapka swagat hai!
 
 Aapki booking request humein successfully mil gayi hai.
 
-📋 Booking ID: ${bookingNumber}
-🚕 Service: ${serviceType}
-📍 Pickup: ${pickup}
-📍 Destination: ${destination}
-📅 Date: ${travelDate}${travelTime ? ` (${travelTime})` : ''}${vehicle ? `\n🚗 Vehicle: ${vehicle}` : ''}
-💰 Total Fare: ${amount}
-📌 Status: ${status}
+${detailsBlock}
 
 Booking confirmation ke liye hamari team aapse jaldi contact karegi.
 
@@ -83,7 +156,10 @@ Agar booking mein koi change ya assistance chahiye, to humein WhatsApp par messa
 Dhanyavaad! 🙏
 
 Saanvi Royal Travels
-📞 +91 9229764300`
+📞 +91 9229764300
+
+⭐ Special Offers:
+${offersUrl}`
 }
 
 export function getWhatsAppBookingUrl(booking: any): string | null {
@@ -92,4 +168,5 @@ export function getWhatsAppBookingUrl(booking: any): string | null {
   const message = formatWhatsAppBookingMessage(booking)
   return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
 }
+
 
