@@ -42,30 +42,48 @@ export function formatWhatsAppBookingMessage(booking: any): string {
   const serviceType = (booking.booking_type || 'Cab Service').replace(/_/g, ' ')
   const pickup = booking.pickup_address || booking.from_location || '—'
   const destination = booking.destination || booking.to_location || booking.package_name || '—'
-  const travelDate = booking.travel_date || (booking.created_at ? formatDate(booking.created_at) : '—')
+  let travelDate = '—'
+  if (booking.travel_date) {
+    try {
+      travelDate = formatDate(booking.travel_date)
+    } catch {
+      travelDate = String(booking.travel_date)
+    }
+  } else if (booking.created_at) {
+    try {
+      travelDate = formatDate(booking.created_at)
+    } catch {
+      travelDate = String(booking.created_at)
+    }
+  }
   const travelTime = booking.pickup_time || booking.travel_time || ''
   const vehicle = booking.vehicle_type || booking.vehicle || ''
   const fareVal = booking.total_amount || booking.fare || 0
   const amount = fareVal ? formatCurrency(fareVal) : '₹0'
   const status = booking.status || 'Pending'
 
-  return `Namaste ${customerName} ji,
-Greetings from Saanvi Royal Travels! 🚗✨
+  return `Namaste ${customerName} ji 🙏
 
-Here are your booking details:
+Saanvi Royal Travels mein aapka swagat hai!
+
+Aapki booking request humein successfully mil gayi hai.
+
 📋 Booking ID: ${bookingNumber}
-🚖 Service: ${serviceType}
+🚕 Service: ${serviceType}
 📍 Pickup: ${pickup}
-🎯 Destination: ${destination}
-📅 Date: ${travelDate}${travelTime ? ` (${travelTime})` : ''}${vehicle ? `\n🚘 Vehicle: ${vehicle}` : ''}
+📍 Destination: ${destination}
+📅 Date: ${travelDate}${travelTime ? ` (${travelTime})` : ''}${vehicle ? `\n🚗 Vehicle: ${vehicle}` : ''}
 💰 Total Fare: ${amount}
-📊 Status: ${status}
+📌 Status: ${status}
 
-Our team is ready to serve you. Please let us know if you need any assistance or changes.
+Booking confirmation ke liye hamari team aapse jaldi contact karegi.
 
-Thank you for choosing Saanvi Royal Travels!
-📞 +91 9229764300
-🌐 https://saanvitravel.com`
+Agar booking mein koi change ya assistance chahiye, to humein WhatsApp par message karein.
+
+Dhanyavaad! 🙏
+
+Saanvi Royal Travels
+📞 +91 9229764300`
 }
 
 export function getWhatsAppBookingUrl(booking: any): string | null {
