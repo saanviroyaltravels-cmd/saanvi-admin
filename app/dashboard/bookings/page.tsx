@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { Search, Download, Filter } from 'lucide-react'
-import { formatDate, formatCurrency } from '@/lib/utils'
+import { formatDate, formatCurrency, getWhatsAppBookingUrl, normalizeIndianMobile } from '@/lib/utils'
 
 const STATUSES = ['All', 'Pending', 'Confirmed', 'Completed', 'Cancelled']
 
@@ -129,11 +129,35 @@ export default function BookingsPage() {
                 </select>
               </div>
               <div className="flex gap-2">
-                <a href={`https://wa.me/91${selected.customer_mobile}`} target="_blank" rel="noreferrer"
-                  className="btn-primary flex-1 justify-center text-xs" style={{ background: '#25d366' }}>
-                  💬 WhatsApp
-                </a>
-                <a href={`tel:${selected.customer_mobile}`} className="btn-ghost flex-1 justify-center text-xs">📞 Call</a>
+                {(() => {
+                  const waUrl = getWhatsAppBookingUrl(selected)
+                  return waUrl ? (
+                    <a
+                      href={waUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-primary flex-1 justify-center text-xs inline-flex items-center gap-1.5"
+                      style={{ background: '#25d366' }}
+                      title="Open WhatsApp with pre-filled booking details"
+                    >
+                      📱 Send WhatsApp
+                    </a>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled
+                      className="btn-ghost flex-1 justify-center text-xs opacity-50 cursor-not-allowed inline-flex items-center gap-1.5"
+                      title="No valid mobile number available"
+                    >
+                      📱 Send WhatsApp
+                    </button>
+                  )
+                })()}
+                {normalizeIndianMobile(selected.customer_mobile) ? (
+                  <a href={`tel:${selected.customer_mobile}`} className="btn-ghost flex-1 justify-center text-xs inline-flex items-center gap-1.5">📞 Call</a>
+                ) : (
+                  <button type="button" disabled className="btn-ghost flex-1 justify-center text-xs opacity-50 cursor-not-allowed">📞 Call</button>
+                )}
               </div>
             </div>
           ) : (
