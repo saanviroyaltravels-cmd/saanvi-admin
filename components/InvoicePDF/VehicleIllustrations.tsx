@@ -181,15 +181,6 @@ function GenericCarSVG({ width = 220, height = 90 }: { width?: number; height?: 
 }
 
 export default function VehicleIllustration({ vehicleName, width, height, className }: VehicleIllustrationProps) {
-  const name = (vehicleName || '').toLowerCase()
-
-  const isTempo = name.includes('tempo') || name.includes('traveller') || name.includes('minibus')
-  const isMPV = name.includes('innova') || name.includes('ertiga') || name.includes('kia') || name.includes('carens') || name.includes('rumion')
-
-  if (isTempo) return <span className={className}><TempoSVG width={width} height={height} /></span>
-  if (isMPV) return <span className={className}><MPVSvg width={width} height={height} /></span>
-  if (name.includes('dzire') || name.includes('etios') || name.includes('sedan')) {
-    return <span className={className}><SedanSVG width={width} height={height} /></span>
-  }
-  return <span className={className}><GenericCarSVG width={width} height={height} /></span>
+  // Vehicle illustration removed per requirement: text vehicle name is preserved in invoice tables, no car drawing rendered
+  return null
 }
