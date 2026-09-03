@@ -7,7 +7,6 @@
  */
 
 'use client'
-import VehicleIllustration from './VehicleIllustrations'
 
 export interface InvoiceData {
   // Invoice meta
@@ -252,22 +251,8 @@ export default function InvoiceTemplate({ data, printMode = false }: InvoiceTemp
           </table>
         </div>
 
-        {/* Vehicle Illustration */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minWidth: 220, padding: '8px 0' }}>
-          {data.vehicleImageUrl ? (
-            <img
-              src={data.vehicleImageUrl}
-              alt={data.vehicleName || 'Vehicle'}
-              style={{ maxWidth: 220, maxHeight: 95, objectFit: 'contain' }}
-              crossOrigin="anonymous"
-            />
-          ) : (
-            <VehicleIllustration vehicleName={data.vehicleName || ''} width={220} height={90} />
-          )}
-          <div style={{ fontSize: 11, color: '#64748b', marginTop: 6, textAlign: 'center', fontWeight: 500 }}>
-            {data.vehicleName || 'Your Vehicle'}
-          </div>
-        </div>
+        {/* Right side remains completely empty per requirement */}
+        <div style={{ minWidth: 220, padding: '8px 0' }} />
       </div>
 
       {/* ═══ FARE SUMMARY ════════════════════════════════════════ */}
