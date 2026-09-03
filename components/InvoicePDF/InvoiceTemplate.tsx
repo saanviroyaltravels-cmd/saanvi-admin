@@ -8,6 +8,8 @@
 
 'use client'
 
+import { DEFAULT_PAYMENT_QR_BASE64 } from './defaultPaymentQrBase64'
+
 export interface InvoiceData {
   // Invoice meta
   invoiceNumber: string
@@ -328,7 +330,7 @@ export default function InvoiceTemplate({ data, printMode = false }: InvoiceTemp
         <div style={{ textAlign: 'center', flexShrink: 0 }}>
           <div style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: 6, padding: 6, display: 'inline-block', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
             <img
-              src={data.paymentQrUrl || '/sbi-payment-qr.png'}
+              src={data.paymentQrUrl || DEFAULT_PAYMENT_QR_BASE64}
               alt="SBI Payment QR - SAANVI ENTERPRISES"
               style={{ width: 95, height: 95, objectFit: 'contain', borderRadius: 4, display: 'block' }}
               crossOrigin="anonymous"
