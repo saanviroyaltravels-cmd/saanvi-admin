@@ -182,6 +182,11 @@ export default function InvoiceTemplate({ data, printMode = false }: InvoiceTemp
             <div style={{ fontSize: 10, color: '#bfdbfe', marginTop: 2 }}>
               📞 {data.companyPhone} &nbsp;|&nbsp; ✉ {data.companyEmail}
             </div>
+            <div style={{ fontSize: 10, color: '#e0f2fe', marginTop: 3, fontWeight: 600, letterSpacing: '0.01em' }}>
+              GSTIN: <span style={{ color: '#ffffff', fontWeight: 700 }}>{data.gstin || '10GXCPK1034H1Z3'}</span>
+              &nbsp;&nbsp;|&nbsp;&nbsp;
+              Udyam: <span style={{ color: '#ffffff', fontWeight: 700 }}>{data.udyam || 'UDYAM-BR-35-0015333'}</span>
+            </div>
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
@@ -297,19 +302,21 @@ export default function InvoiceTemplate({ data, printMode = false }: InvoiceTemp
         </div>
       </div>
 
-      {/* ═══ GST INFORMATION ════════════════════════════════════ */}
-      <div style={{ padding: '10px 28px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', gap: 36, alignItems: 'center' }}>
-        <div>
-          <div style={sectionTitle}>GST Information</div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: data.gstApplicable ? '#16a34a' : '#dc2626', marginBottom: 4 }}>
-            GST: {data.gstApplicable ? `Applicable @ ${data.gstRate}%` : 'Not Charged'}
+      {/* ═══ GST INFORMATION (Only when GST applicable is YES) ══ */}
+      {data.gstApplicable && (
+        <div style={{ padding: '10px 28px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', gap: 36, alignItems: 'center' }}>
+          <div>
+            <div style={sectionTitle}>GST Information</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#16a34a', marginBottom: 4 }}>
+              GST: Applicable @ {data.gstRate}%
+            </div>
+          </div>
+          <div style={{ fontSize: 11, color: '#475569' }}>
+            <div>GSTIN: <span style={{ fontWeight: 700, color: '#0f172a' }}>{data.gstin}</span></div>
+            <div style={{ marginTop: 2 }}>Udyam: <span style={{ fontWeight: 700, color: '#0f172a' }}>{data.udyam}</span></div>
           </div>
         </div>
-        <div style={{ fontSize: 11, color: '#475569' }}>
-          <div>GSTIN: <span style={{ fontWeight: 700, color: '#0f172a' }}>{data.gstin}</span></div>
-          <div style={{ marginTop: 2 }}>Udyam: <span style={{ fontWeight: 700, color: '#0f172a' }}>{data.udyam}</span></div>
-        </div>
-      </div>
+      )}
 
       {/* ═══ PAYMENT QR ══════════════════════════════════════════ */}
       <div style={{ padding: '12px 28px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 20, background: '#fafbfc' }}>
