@@ -93,6 +93,28 @@ export async function generateInvoicePDF(data: InvoiceData, filename?: string): 
   // Small buffer to guarantee canvas painting
   await new Promise(resolve => setTimeout(resolve, 150))
 
+  // Measure the exact position of the QR code relative to container
+  const qrElement = container.querySelector('#invoice-payment-qr-img') as HTMLImageElement | null
+  let qrMetrics: { x: number; y: number; width: number; height: number } | null = null
+
+  if (qrElement) {
+    let curr: HTMLElement | null = qrElement
+    let top = 0
+    let left = 0
+    while (curr && curr !== container) {
+      top += curr.offsetTop || 0
+      left += curr.offsetLeft || 0
+      curr = curr.offsetParent as HTMLElement | null
+    }
+
+    qrMetrics = {
+      x: left,
+      y: top,
+      width: qrElement.offsetWidth || 95,
+      height: qrElement.offsetHeight || 95,
+    }
+  }
+
   try {
     const canvas = await html2canvas(container, {
       scale: 2,              // High-res retina scale
@@ -119,14 +141,35 @@ export async function generateInvoicePDF(data: InvoiceData, filename?: string): 
     let imgHeight = pageWidth * canvasRatio
 
     // Fit-to-page protection: Ensure entire invoice fits onto exactly 1 page
+    let effectiveScale = 1
+    let xOffset = 0
+    let renderWidth = pageWidth
+    let renderHeight = imgHeight
+
     if (imgHeight > pageHeight) {
-      const scaleFactor = pageHeight / imgHeight
-      const renderWidth = pageWidth * scaleFactor
-      const renderHeight = pageHeight
-      const xOffset = (pageWidth - renderWidth) / 2
+      effectiveScale = pageHeight / imgHeight
+      renderWidth = pageWidth * effectiveScale
+      renderHeight = pageHeight
+      xOffset = (pageWidth - renderWidth) / 2
       pdf.addImage(imgData, 'JPEG', xOffset, 0, renderWidth, renderHeight)
     } else {
       pdf.addImage(imgData, 'JPEG', 0, 0, pageWidth, imgHeight)
+    }
+
+    // Direct QR Code Overlay into PDF:
+    // Ensures that even if html2canvas skips/taints <img> elements during DOM capture,
+    // the QR code image is 100% guaranteed to be sharp, visible, and placed at the exact pixel position.
+    if (qrMetrics && resolvedPaymentQrUrl) {
+      const containerWidthPx = 794
+      // Convert pixel position from container coordinates to PDF mm coordinates
+      const mmPerPx = (pageWidth / containerWidthPx) * effectiveScale
+      const qrPdfX = xOffset + (qrMetrics.x * mmPerPx)
+      const qrPdfY = qrMetrics.y * mmPerPx
+      const qrPdfW = qrMetrics.width * mmPerPx
+      const qrPdfH = qrMetrics.height * mmPerPx
+
+      const qrFormat = resolvedPaymentQrUrl.startsWith('data:image/jpeg') ? 'JPEG' : 'PNG'
+      pdf.addImage(resolvedPaymentQrUrl, qrFormat, qrPdfX, qrPdfY, qrPdfW, qrPdfH)
     }
 
     const outFilename = filename || `${data.invoiceNumber.replace(/\//g, '-')}-${(data.customerName || 'customer').replace(/\s+/g, '-')}.pdf`
