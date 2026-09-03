@@ -76,9 +76,9 @@ function fmt(n: number) {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <tr>
-      <td style={{ padding: '5px 0', color: '#475569', fontSize: 12, width: '48%' }}>{label}</td>
-      <td style={{ padding: '5px 8px', color: '#475569', fontSize: 12 }}>:</td>
-      <td style={{ padding: '5px 0', color: '#0f172a', fontSize: 12, fontWeight: 600 }}>{value || '—'}</td>
+      <td style={{ padding: '3px 0', color: '#475569', fontSize: 12, width: '48%' }}>{label}</td>
+      <td style={{ padding: '3px 8px', color: '#475569', fontSize: 12 }}>:</td>
+      <td style={{ padding: '3px 0', color: '#0f172a', fontSize: 12, fontWeight: 600 }}>{value || '—'}</td>
     </tr>
   )
 }
@@ -91,7 +91,7 @@ interface InvoiceTemplateProps {
 }
 
 export default function InvoiceTemplate({ data, printMode = false }: InvoiceTemplateProps) {
-  const hasOffer = !!(data.offerTitle || data.offerPromoCode)
+  const hasOffer = Boolean(data.offerTitle || data.offerPromoCode)
 
   const discountLabel =
     data.discountType === 'percentage'
@@ -114,7 +114,7 @@ export default function InvoiceTemplate({ data, printMode = false }: InvoiceTemp
 
   const header: React.CSSProperties = {
     background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 60%, #b45309 100%)',
-    padding: '24px 32px 20px',
+    padding: '16px 28px 14px',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -127,28 +127,28 @@ export default function InvoiceTemplate({ data, printMode = false }: InvoiceTemp
     textTransform: 'uppercase' as const,
     color: '#1e3a8a',
     borderBottom: '2px solid #1e40af',
-    paddingBottom: 4,
-    marginBottom: 12,
+    paddingBottom: 3,
+    marginBottom: 8,
   }
 
   const amountRow: React.CSSProperties = {
     display: 'flex',
     justifyContent: 'space-between',
-    padding: '8px 0',
-    fontSize: 14,
+    padding: '5px 0',
+    fontSize: 13,
     borderBottom: '1px solid #f1f5f9',
   }
 
   const totalRow: React.CSSProperties = {
     display: 'flex',
     justifyContent: 'space-between',
-    padding: '12px 16px',
+    padding: '8px 14px',
     background: 'linear-gradient(90deg, #1e3a8a, #1e40af)',
     color: 'white',
     borderRadius: 6,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: 700,
-    marginTop: 8,
+    marginTop: 6,
   }
 
   return (
@@ -156,46 +156,59 @@ export default function InvoiceTemplate({ data, printMode = false }: InvoiceTemp
 
       {/* ═══ HEADER ═══════════════════════════════════════════════ */}
       <div style={header}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           {/* Logo */}
-          <div style={{ width: 70, height: 70, background: 'white', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+          <div style={{ width: 56, height: 56, background: 'white', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
             <img
               src={data.logoUrl || '/logo.png'}
-              alt="Saanvi Royal Travels"
-              style={{ width: 64, height: 64, objectFit: 'contain' }}
+              alt={data.companyName}
+              style={{ width: 50, height: 50, objectFit: 'contain' }}
               crossOrigin="anonymous"
             />
           </div>
           <div>
-            <div style={{ color: 'white', fontSize: 22, fontWeight: 800, letterSpacing: '-0.01em', lineHeight: 1.1 }}>
+            <div style={{
+              fontSize: 20, fontWeight: 900, color: '#ffffff',
+              letterSpacing: '0.02em', lineHeight: 1.15,
+              textTransform: 'uppercase',
+            }}>
               {data.companyName}
             </div>
-            <div style={{ color: '#bfdbfe', fontSize: 11, marginTop: 4 }}>
+            <div style={{ fontSize: 10, color: '#bfdbfe', marginTop: 2 }}>
               {data.companyAddress}
             </div>
-            <div style={{ color: '#bfdbfe', fontSize: 11, marginTop: 3 }}>
+            <div style={{ fontSize: 10, color: '#bfdbfe', marginTop: 2 }}>
               📞 {data.companyPhone} &nbsp;|&nbsp; ✉ {data.companyEmail}
             </div>
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ color: '#fde68a', fontSize: 28, fontWeight: 900, letterSpacing: '0.04em' }}>
+          <div style={{
+            display: 'inline-block',
+            background: 'rgba(255,255,255,0.15)',
+            border: '1px solid rgba(255,255,255,0.3)',
+            borderRadius: 6, padding: '3px 12px',
+            fontSize: 11, fontWeight: 800, color: '#ffffff',
+            letterSpacing: '0.08em', marginBottom: 4,
+          }}>
             TAX INVOICE
           </div>
-          <div style={{ color: '#bfdbfe', fontSize: 12, marginTop: 4 }}>
-            Invoice No: <span style={{ color: 'white', fontWeight: 700 }}>{data.invoiceNumber}</span>
+          <div style={{ fontSize: 14, fontWeight: 800, color: '#ffffff', letterSpacing: '0.04em' }}>
+            #{data.invoiceNumber}
           </div>
-          <div style={{ color: '#bfdbfe', fontSize: 12, marginTop: 2 }}>
-            Date: <span style={{ color: 'white', fontWeight: 600 }}>{data.invoiceDate}</span>
+          <div style={{ fontSize: 11, color: '#bfdbfe', marginTop: 2 }}>
+            Date: <span style={{ color: '#ffffff', fontWeight: 600 }}>{data.invoiceDate}</span>
           </div>
-          <div style={{ marginTop: 8 }}>
-            <span style={{
-              background: data.paymentStatus === 'Paid' ? '#065f46' : data.paymentStatus === 'Partial' ? '#92400e' : '#991b1b',
-              color: 'white', padding: '3px 12px', borderRadius: 99, fontSize: 11, fontWeight: 700, letterSpacing: '0.05em'
-            }}>
-              {data.paymentStatus.toUpperCase()}
-            </span>
-          </div>
+          {data.paymentStatus && (
+            <div style={{ marginTop: 4 }}>
+              <span style={{
+                background: data.paymentStatus === 'Paid' ? '#065f46' : data.paymentStatus === 'Partial' ? '#92400e' : '#991b1b',
+                color: 'white', padding: '2px 8px', borderRadius: 99, fontSize: 10, fontWeight: 700, letterSpacing: '0.04em'
+              }}>
+                {data.paymentStatus.toUpperCase()}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -203,7 +216,7 @@ export default function InvoiceTemplate({ data, printMode = false }: InvoiceTemp
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, borderBottom: '1px solid #e2e8f0' }}>
 
         {/* Company Details */}
-        <div style={{ padding: '20px 24px 16px 32px', borderRight: '1px solid #e2e8f0' }}>
+        <div style={{ padding: '12px 20px 10px 28px', borderRight: '1px solid #e2e8f0' }}>
           <div style={sectionTitle}>Company Details</div>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <tbody>
@@ -217,25 +230,25 @@ export default function InvoiceTemplate({ data, printMode = false }: InvoiceTemp
         </div>
 
         {/* Customer Details */}
-        <div style={{ padding: '20px 32px 16px 24px', background: '#f8fafc' }}>
+        <div style={{ padding: '12px 28px 10px 20px', background: '#f8fafc' }}>
           <div style={sectionTitle}>Billed To</div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', marginBottom: 6 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>
             {data.customerName}
           </div>
           {data.customerPhone && (
-            <div style={{ fontSize: 12, color: '#475569', marginBottom: 3 }}>📞 {data.customerPhone}</div>
+            <div style={{ fontSize: 11, color: '#475569', marginBottom: 2 }}>📞 {data.customerPhone}</div>
           )}
           {data.customerEmail && (
-            <div style={{ fontSize: 12, color: '#475569', marginBottom: 3 }}>✉ {data.customerEmail}</div>
+            <div style={{ fontSize: 11, color: '#475569', marginBottom: 2 }}>✉ {data.customerEmail}</div>
           )}
           {data.customerAddress && (
-            <div style={{ fontSize: 12, color: '#475569' }}>📍 {data.customerAddress}</div>
+            <div style={{ fontSize: 11, color: '#475569' }}>📍 {data.customerAddress}</div>
           )}
         </div>
       </div>
 
       {/* ═══ TRIP DETAILS + VEHICLE ═══════════════════════════════ */}
-      <div style={{ padding: '20px 32px', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: 24 }}>
+      <div style={{ padding: '12px 28px', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: 20 }}>
         <div style={{ flex: 1 }}>
           <div style={sectionTitle}>Trip Details</div>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -251,12 +264,11 @@ export default function InvoiceTemplate({ data, printMode = false }: InvoiceTemp
           </table>
         </div>
 
-        {/* Right side remains completely empty per requirement */}
-        <div style={{ minWidth: 220, padding: '8px 0' }} />
+        <div style={{ minWidth: 200 }} />
       </div>
 
       {/* ═══ FARE SUMMARY ════════════════════════════════════════ */}
-      <div style={{ padding: '20px 32px', borderBottom: '1px solid #e2e8f0' }}>
+      <div style={{ padding: '12px 28px', borderBottom: '1px solid #e2e8f0' }}>
         <div style={sectionTitle}>Fare Summary</div>
         <div style={{ maxWidth: 420 }}>
           <div style={amountRow}>
@@ -275,7 +287,7 @@ export default function InvoiceTemplate({ data, printMode = false }: InvoiceTemp
               <span style={{ fontWeight: 600 }}>+ {fmt(data.gstAmount)}</span>
             </div>
           )}
-          <div style={{ borderTop: '2px dashed #cbd5e1', marginTop: 8, paddingTop: 8 }} />
+          <div style={{ borderTop: '2px dashed #cbd5e1', marginTop: 6, paddingTop: 6 }} />
           <div style={totalRow}>
             <span>GRAND TOTAL</span>
             <span>{fmt(data.finalAmount + (data.gstApplicable ? data.gstAmount : 0))}</span>
@@ -284,54 +296,54 @@ export default function InvoiceTemplate({ data, printMode = false }: InvoiceTemp
       </div>
 
       {/* ═══ GST INFORMATION ════════════════════════════════════ */}
-      <div style={{ padding: '16px 32px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', gap: 40, alignItems: 'center' }}>
+      <div style={{ padding: '10px 28px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', gap: 36, alignItems: 'center' }}>
         <div>
           <div style={sectionTitle}>GST Information</div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: data.gstApplicable ? '#16a34a' : '#dc2626', marginBottom: 6 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: data.gstApplicable ? '#16a34a' : '#dc2626', marginBottom: 4 }}>
             GST: {data.gstApplicable ? `Applicable @ ${data.gstRate}%` : 'Not Charged'}
           </div>
         </div>
-        <div style={{ fontSize: 12, color: '#475569' }}>
+        <div style={{ fontSize: 11, color: '#475569' }}>
           <div>GSTIN: <span style={{ fontWeight: 700, color: '#0f172a' }}>{data.gstin}</span></div>
-          <div style={{ marginTop: 3 }}>Udyam: <span style={{ fontWeight: 700, color: '#0f172a' }}>{data.udyam}</span></div>
+          <div style={{ marginTop: 2 }}>Udyam: <span style={{ fontWeight: 700, color: '#0f172a' }}>{data.udyam}</span></div>
         </div>
       </div>
 
       {/* ═══ PAYMENT QR ══════════════════════════════════════════ */}
-      <div style={{ padding: '18px 32px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 24, background: '#fafbfc' }}>
+      <div style={{ padding: '12px 28px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 20, background: '#fafbfc' }}>
         <div style={{ flex: 1 }}>
           <div style={sectionTitle}>Scan &amp; Pay</div>
-          <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a', marginBottom: 2, letterSpacing: '0.02em' }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', marginBottom: 2, letterSpacing: '0.02em' }}>
             SAANVI ENTERPRISES
           </div>
-          <div style={{ fontSize: 12, color: '#1e40af', fontWeight: 700, marginBottom: 6 }}>
-            UPI ID: <span style={{ fontFamily: 'monospace', fontSize: 13, background: '#e0e7ff', padding: '2px 6px', borderRadius: 4, color: '#1e3a8a' }}>41212980663@sbi</span>
+          <div style={{ fontSize: 11, color: '#1e40af', fontWeight: 700, marginBottom: 4 }}>
+            UPI ID: <span style={{ fontFamily: 'monospace', fontSize: 12, background: '#e0e7ff', padding: '2px 5px', borderRadius: 4, color: '#1e3a8a' }}>41212980663@sbi</span>
           </div>
-          <div style={{ fontSize: 11, color: '#475569', lineHeight: 1.6 }}>
+          <div style={{ fontSize: 10, color: '#475569', lineHeight: 1.5 }}>
             {data.paymentNote || 'Scan with any UPI App (GPay, PhonePe, Paytm, BHIM, Yono SBI) for instant payment.'}
             <br />
             <strong>WhatsApp:</strong> {data.companyWhatsApp}
           </div>
         </div>
         <div style={{ textAlign: 'center', flexShrink: 0 }}>
-          <div style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: 8, padding: 8, display: 'inline-block', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+          <div style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: 6, padding: 6, display: 'inline-block', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
             <img
               src={data.paymentQrUrl || '/sbi-payment-qr.png'}
               alt="SBI Payment QR - SAANVI ENTERPRISES"
-              style={{ width: 130, height: 130, objectFit: 'contain', borderRadius: 4, display: 'block' }}
+              style={{ width: 95, height: 95, objectFit: 'contain', borderRadius: 4, display: 'block' }}
               crossOrigin="anonymous"
             />
           </div>
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#1e3a8a', marginTop: 4, letterSpacing: '0.04em' }}>SCAN TO PAY (UPI)</div>
+          <div style={{ fontSize: 9, fontWeight: 700, color: '#1e3a8a', marginTop: 3, letterSpacing: '0.04em' }}>SCAN TO PAY (UPI)</div>
         </div>
       </div>
 
       {/* ═══ TERMS ══════════════════════════════════════════════ */}
-      <div style={{ padding: '14px 32px', borderBottom: hasOffer ? '1px solid #e2e8f0' : 'none', background: '#eff6ff', textAlign: 'center' }}>
-        <div style={{ fontSize: 12, color: '#1e40af', fontStyle: 'italic' }}>
+      <div style={{ padding: '10px 28px', borderBottom: hasOffer ? '1px solid #e2e8f0' : 'none', background: '#eff6ff', textAlign: 'center' }}>
+        <div style={{ fontSize: 11, color: '#1e40af', fontStyle: 'italic' }}>
           {data.invoiceTerms || 'Thank you for choosing Saanvi Royal Travels. We look forward to serving you again!'}
         </div>
-        <div style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>
+        <div style={{ fontSize: 10, color: '#64748b', marginTop: 3 }}>
           For queries: {data.companyPhone} | {data.companyEmail}
         </div>
       </div>
@@ -339,32 +351,32 @@ export default function InvoiceTemplate({ data, printMode = false }: InvoiceTemp
       {/* ═══ SPECIAL OFFER (only if active offer exists) ════════ */}
       {hasOffer && (
         <div style={{
-          margin: '0 32px 24px', borderRadius: 8,
+          margin: '0 28px 8px', borderRadius: 6,
           background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 40%, #fbbf24 100%)',
-          border: '2px solid #d97706',
-          padding: '14px 20px',
+          border: '1.5px solid #d97706',
+          padding: '8px 14px',
           display: 'flex',
           alignItems: 'center',
-          gap: 16,
-          marginTop: 0,
+          gap: 12,
+          marginTop: 6,
         }}>
-          <div style={{ fontSize: 28 }}>🚗</div>
+          <div style={{ fontSize: 22 }}>🚗</div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 800, color: '#92400e', letterSpacing: '0.03em' }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: '#92400e', letterSpacing: '0.03em' }}>
               ✦ SPECIAL OFFER — {data.offerTitle || 'Book Again & Save!'}
             </div>
             {data.offerDescription && (
-              <div style={{ fontSize: 11, color: '#78350f', marginTop: 3 }}>{data.offerDescription}</div>
+              <div style={{ fontSize: 10, color: '#78350f', marginTop: 2 }}>{data.offerDescription}</div>
             )}
             {data.offerValidUntil && (
-              <div style={{ fontSize: 10, color: '#92400e', marginTop: 2 }}>Valid until: {data.offerValidUntil}</div>
+              <div style={{ fontSize: 9, color: '#92400e', marginTop: 1 }}>Valid until: {data.offerValidUntil}</div>
             )}
           </div>
           {data.offerPromoCode && (
-            <div style={{ textAlign: 'center', background: '#fff', border: '2px dashed #d97706', borderRadius: 6, padding: '6px 14px' }}>
-              <div style={{ fontSize: 9, color: '#92400e', fontWeight: 700, letterSpacing: '0.05em' }}>PROMO CODE</div>
-              <div style={{ fontSize: 16, fontWeight: 900, color: '#b45309', letterSpacing: '0.1em' }}>{data.offerPromoCode}</div>
-              <div style={{ fontSize: 9, color: '#78350f' }}>Terms Apply</div>
+            <div style={{ textAlign: 'center', background: '#fff', border: '1.5px dashed #d97706', borderRadius: 5, padding: '4px 10px' }}>
+              <div style={{ fontSize: 8, color: '#92400e', fontWeight: 700, letterSpacing: '0.05em' }}>PROMO CODE</div>
+              <div style={{ fontSize: 14, fontWeight: 900, color: '#b45309', letterSpacing: '0.08em' }}>{data.offerPromoCode}</div>
+              <div style={{ fontSize: 8, color: '#78350f' }}>Terms Apply</div>
             </div>
           )}
         </div>
@@ -373,18 +385,17 @@ export default function InvoiceTemplate({ data, printMode = false }: InvoiceTemp
       {/* ═══ FOOTER BAR ══════════════════════════════════════════ */}
       <div style={{
         background: 'linear-gradient(135deg, #1e3a8a, #1e40af)',
-        padding: '12px 32px',
+        padding: '10px 28px',
         textAlign: 'center',
         color: '#bfdbfe',
-        fontSize: 11,
+        fontSize: 10,
         letterSpacing: '0.04em',
-        marginTop: hasOffer ? 0 : 0,
       }}>
-        <span style={{ color: 'white', fontWeight: 700, fontSize: 13 }}>
+        <span style={{ color: 'white', fontWeight: 700, fontSize: 12 }}>
           ✈ Thank you for choosing {data.companyName}
         </span>
-        <span style={{ marginLeft: 16, opacity: 0.7 }}>|</span>
-        <span style={{ marginLeft: 16 }}>Safe &amp; comfortable travel is our promise</span>
+        <span style={{ marginLeft: 14, opacity: 0.7 }}>|</span>
+        <span style={{ marginLeft: 14 }}>Safe &amp; comfortable travel is our promise</span>
       </div>
 
     </div>

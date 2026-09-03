@@ -1,7 +1,7 @@
 /**
  * generateInvoicePDF.ts
  * Client-side PDF generation using jsPDF + browser html2canvas.
- * Renders InvoiceTemplate to a canvas then embeds in A4 PDF.
+ * Renders InvoiceTemplate to a canvas and saves as a crisp 1-page A4 PDF.
  * ZERO impact on existing code.
  */
 
@@ -14,7 +14,7 @@ export async function generateInvoicePDF(data: InvoiceData, filename?: string): 
     import('html2canvas'),
   ])
 
-  // Render the invoice into a hidden off-screen container
+  // Render the invoice into a hidden off-screen container with fixed A4 dimensions
   const container = document.createElement('div')
   container.style.cssText = `
     position: fixed;
@@ -34,13 +34,13 @@ export async function generateInvoicePDF(data: InvoiceData, filename?: string): 
   const root = createRoot(container)
   await new Promise<void>(resolve => {
     root.render(createElement(InvoiceTemplate, { data, printMode: true }))
-    // Wait for render + images
-    setTimeout(resolve, 600)
+    // Wait for render + image assets
+    setTimeout(resolve, 500)
   })
 
   try {
     const canvas = await html2canvas(container, {
-      scale: 2,              // High-res
+      scale: 2,              // High-res retina scale
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff',
@@ -61,39 +61,20 @@ export async function generateInvoicePDF(data: InvoiceData, filename?: string): 
     const pageHeight = 297
 
     const canvasRatio = canvas.height / canvas.width
-    const imgHeight = pageWidth * canvasRatio
+    let imgHeight = pageWidth * canvasRatio
 
-    if (imgHeight <= pageHeight) {
-      // Fits on one page
-      pdf.addImage(imgData, 'JPEG', 0, 0, pageWidth, imgHeight)
+    // Fit-to-page protection: Ensure entire invoice fits onto exactly 1 page
+    if (imgHeight > pageHeight) {
+      const scaleFactor = pageHeight / imgHeight
+      const renderWidth = pageWidth * scaleFactor
+      const renderHeight = pageHeight
+      const xOffset = (pageWidth - renderWidth) / 2
+      pdf.addImage(imgData, 'JPEG', xOffset, 0, renderWidth, renderHeight)
     } else {
-      // Multi-page support
-      let yOffset = 0
-      let pageY = 0
-      const sliceHeight = Math.floor(canvas.width * (pageHeight / pageWidth))
-
-      while (yOffset < canvas.height) {
-        const remaining = canvas.height - yOffset
-        const slice = Math.min(sliceHeight, remaining)
-
-        const sliceCanvas = document.createElement('canvas')
-        sliceCanvas.width = canvas.width
-        sliceCanvas.height = slice
-        const ctx = sliceCanvas.getContext('2d')!
-        ctx.drawImage(canvas, 0, yOffset, canvas.width, slice, 0, 0, canvas.width, slice)
-
-        const sliceData = sliceCanvas.toDataURL('image/jpeg', 0.95)
-        const sliceImgHeight = pageWidth * (slice / canvas.width)
-
-        if (pageY > 0) pdf.addPage()
-        pdf.addImage(sliceData, 'JPEG', 0, 0, pageWidth, sliceImgHeight)
-
-        yOffset += slice
-        pageY++
-      }
+      pdf.addImage(imgData, 'JPEG', 0, 0, pageWidth, imgHeight)
     }
 
-    const outFilename = filename || `${data.invoiceNumber}-${data.customerName.replace(/\s+/g, '-')}.pdf`
+    const outFilename = filename || `${data.invoiceNumber.replace(/\//g, '-')}-${(data.customerName || 'customer').replace(/\s+/g, '-')}.pdf`
     pdf.save(outFilename)
 
   } finally {
