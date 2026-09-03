@@ -2,14 +2,16 @@
 /**
  * /dashboard/invoices/new/page.tsx
  * Create New Invoice page.
- * NEW FILE — does not modify any existing page.
+ * MODIFIED: GST-aware invoice numbering (SRT-GST-YYYY-NNNN vs SRT-INV-YYYY-NNNN)
+ *           Duplicate-safe retry logic.
+ *           Auto-hint GST from booking preference.
  */
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import { ChevronLeft, Download, Save, RefreshCw, Search } from 'lucide-react'
+import { ChevronLeft, Download, Save, Search } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import type { InvoiceData } from '@/components/InvoicePDF/InvoiceTemplate'
 import { formatCurrency } from '@/lib/utils'
@@ -31,12 +33,41 @@ const COMPANY_DEFAULTS = {
   udyam: 'UDYAM-BR-35-0015333',
 }
 
-// ─── Helper ─────────────────────────────────────────────────
-function generateInvoiceNumber(seq: number) {
+// ─── GST-Aware Invoice Number Generator ────────────────────
+// Atomic Sequences: SRT/YYYY/1 (GST) vs SRT-INV-YYYY-0001 (Non-GST)
+async function generateUniqueInvoiceNumber(isGST: boolean, supabase: any): Promise<string> {
   const year = new Date().getFullYear()
-  return `SRT-INV-${year}-${String(seq).padStart(4, '0')}`
+
+  // 1. Try PostgreSQL RPC
+  const { data: rpcNum, error: rpcErr } = await supabase.rpc('fn_next_invoice_number', {
+    p_is_gst: isGST,
+    p_year: year
+  })
+
+  if (!rpcErr && rpcNum) {
+    return rpcNum
+  }
+
+  // 2. Fallback using invoice_sequences table
+  const seqName = isGST ? `gst_${year}` : `nongst_${year}`
+  const { data: seqRow } = await supabase
+    .from('invoice_sequences')
+    .select('current_val')
+    .eq('sequence_name', seqName)
+    .maybeSingle()
+
+  const nextVal = (seqRow?.current_val || 0) + 1
+  await supabase
+    .from('invoice_sequences')
+    .upsert({ sequence_name: seqName, current_val: nextVal, updated_at: new Date().toISOString() })
+
+  if (isGST) {
+    return `SRT/${year}/${nextVal}`
+  }
+  return `SRT-INV-${year}-${String(nextVal).padStart(4, '0')}`
 }
 
+// ─── Amount Helpers ─────────────────────────────────────────
 function calculateAmounts(original: number, discType: string, discValue: number) {
   let discAmount = 0
   if (discType === 'percentage') discAmount = Math.round((original * discValue) / 100)
@@ -45,10 +76,11 @@ function calculateAmounts(original: number, discType: string, discValue: number)
   return { discountAmount: discAmount, finalAmount }
 }
 
-// ─── Main Component ──────────────────────────────────────────
-export default function NewInvoicePage() {
+// ─── Main Component (inner — wrapped in Suspense for useSearchParams) ──────────
+function NewInvoicePageInner() {
   const supabase = createClient()
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   // Form state
   const [bookingSearch, setBookingSearch] = useState('')
@@ -83,6 +115,8 @@ export default function NewInvoicePage() {
   // GST
   const [gstApplicable, setGstApplicable] = useState(false)
   const [gstRate, setGstRate] = useState(18)
+  // Track if the linked booking requested GST (for hint only)
+  const [bookingWantsGst, setBookingWantsGst] = useState<boolean | null>(null)
 
   // Extra
   const [paymentQrUrl, setPaymentQrUrl] = useState('/sbi-payment-qr.png')
@@ -107,10 +141,6 @@ export default function NewInvoicePage() {
 
   // ─── Lifecycle ────────────────────────────────────────────
   const loadInitialData = useCallback(async () => {
-    // Load invoice sequence number
-    const { count } = await supabase.from('invoices').select('id', { count: 'exact', head: true })
-    setInvoiceNumber(generateInvoiceNumber((count || 0) + 1))
-
     // Load site_settings (business name, address, phone, email)
     const { data: settings } = await supabase.from('site_settings').select('setting_key,setting_value')
     if (settings) {
@@ -126,8 +156,7 @@ export default function NewInvoicePage() {
       }))
     }
 
-    // Load invoice_settings — GSTIN, Udyam, QR URL, GST defaults
-    // This is a SEPARATE table; does NOT use site_settings.category='invoice'
+    // Load invoice_settings — GSTIN, Udyam, QR URL
     const { data: invSettings } = await supabase
       .from('invoice_settings')
       .select('*')
@@ -165,6 +194,46 @@ export default function NewInvoicePage() {
 
   useEffect(() => { loadInitialData() }, [loadInitialData])
 
+  // Pre-populate from URL params (when navigating from bookings page via Generate Invoice)
+  useEffect(() => {
+    const bookingId = searchParams.get('bookingId')
+    const customer = searchParams.get('customer')
+    const phone = searchParams.get('phone')
+    const email = searchParams.get('email')
+    const pickup = searchParams.get('pickup')
+    const drop = searchParams.get('drop')
+    const vehicle = searchParams.get('vehicle')
+    const date = searchParams.get('date')
+    const amount = searchParams.get('amount')
+    const gst = searchParams.get('gst')
+
+    if (bookingId) setBookingSearch(bookingId)
+    if (customer) setCustomerName(customer)
+    if (phone) setCustomerPhone(phone)
+    if (email) setCustomerEmail(email)
+    if (pickup) setPickupAddress(pickup)
+    if (drop) setDropAddress(drop)
+    if (vehicle) setVehicleName(vehicle)
+    if (date) setJourneyDate(date)
+    if (amount) setOriginalAmount(Number(amount))
+    if (gst === '1') setGstApplicable(true)
+  }, []) // run once on mount // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Re-generate invoice number whenever gstApplicable changes
+  // so the number always matches the correct series
+  useEffect(() => {
+    let cancelled = false
+    generateUniqueInvoiceNumber(gstApplicable, supabase).then(num => {
+      if (!cancelled) setInvoiceNumber(num)
+    }).catch(() => {
+      // Fallback if DB not reachable
+      const year = new Date().getFullYear()
+      const prefix = gstApplicable ? `SRT-GST-${year}` : `SRT-INV-${year}`
+      if (!cancelled) setInvoiceNumber(`${prefix}-0001`)
+    })
+    return () => { cancelled = true }
+  }, [gstApplicable]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // Booking search
   useEffect(() => {
     if (!bookingSearch.trim()) { setBookingSearchResults([]); return }
@@ -195,13 +264,20 @@ export default function NewInvoicePage() {
     setCustomerPhone(b.customer_mobile || '')
     setCustomerEmail(b.customer_email || '')
     setPickupAddress(b.pickup_address || '')
-    setDropAddress(b.destination || '')
+    setDropAddress(b.destination || b.drop_address || '')
     setVehicleName(b.vehicle_type || '')
     setTripType((b.booking_type || '').replace(/_/g, ' '))
     setJourneyDate(b.travel_date || '')
     setOriginalAmount(Number(b.total_amount || b.fare || 0))
     setBookingSearch(`${b.booking_number} — ${b.customer_name}`)
     setShowBookingDropdown(false)
+
+    // Auto-hint GST from booking preference (saved when customer submitted)
+    const wantsGst = b.gst_invoice_required === true
+    setBookingWantsGst(b.gst_invoice_required === null ? null : b.gst_invoice_required)
+    if (wantsGst) {
+      setGstApplicable(true)
+    }
   }
 
   // ─── Invoice data object (for preview and save) ────────────
@@ -238,60 +314,98 @@ export default function NewInvoicePage() {
     invoiceTerms: 'Thank you for choosing Saanvi Royal Travels. We look forward to serving you again!',
   }
 
-  // ─── Save to DB ────────────────────────────────────────────
+  // ─── Save to DB (with duplicate-safe retry) ─────────────────
   async function handleSave(download = false) {
     if (!customerName.trim()) { toast.error('Customer name is required'); return }
     if (originalAmount <= 0) { toast.error('Enter a valid booking amount'); return }
 
     setSaving(true)
     try {
-      const payload = {
-        invoice_number: invoiceNumber,
-        invoice_date: invoiceDate,
-        booking_id: selectedBooking?.booking_number || null,
-        customer_name: customerName,
-        customer_phone: customerPhone,
-        customer_email: customerEmail,
-        customer_address: customerAddress,
-        pickup_address: pickupAddress,
-        drop_address: dropAddress,
-        vehicle_name: vehicleName,
-        trip_type: tripType,
-        journey_date: journeyDate,
-        journey_time: journeyTime,
-        original_amount: originalAmount,
-        discount_type: discountType,
-        discount_value: discountValue,
-        discount_amount: discountAmount,
-        final_amount: finalAmount,
-        gst_applicable: gstApplicable,
-        gst_rate: gstRate,
-        gst_amount: gstAmount,
-        payment_qr_url: paymentQrUrl,
-        payment_note: paymentNote,
-        payment_status: 'Unpaid',
-        notes,
-        ...companySettings,
-        offer_title: activeOffer?.title || null,
-        offer_description: activeOffer?.description || null,
-        offer_promo_code: activeOffer?.promo_code || null,
-        offer_valid_until: activeOffer?.valid_until || null,
+      // Generate a fresh invoice number right before saving (avoids stale number from state)
+      let finalInvoiceNumber = invoiceNumber
+      let saved = false
+      let lastError: any = null
+
+      for (let attempt = 0; attempt < 3; attempt++) {
+        if (attempt > 0) {
+          // On retry, generate a fresh number
+          finalInvoiceNumber = await generateUniqueInvoiceNumber(gstApplicable, supabase)
+          setInvoiceNumber(finalInvoiceNumber)
+        }
+
+        const payload = {
+          invoice_number: finalInvoiceNumber,
+          invoice_date: invoiceDate,
+          booking_id: selectedBooking?.booking_number || null,
+          customer_name: customerName,
+          customer_phone: customerPhone,
+          customer_email: customerEmail,
+          customer_address: customerAddress,
+          pickup_address: pickupAddress,
+          drop_address: dropAddress,
+          vehicle_name: vehicleName,
+          trip_type: tripType,
+          journey_date: journeyDate,
+          journey_time: journeyTime,
+          original_amount: originalAmount,
+          discount_type: discountType,
+          discount_value: discountValue,
+          discount_amount: discountAmount,
+          final_amount: finalAmount,
+          gst_applicable: gstApplicable,
+          gst_rate: gstRate,
+          gst_amount: gstAmount,
+          payment_qr_url: paymentQrUrl,
+          payment_note: paymentNote,
+          payment_status: 'Unpaid',
+          notes,
+          company_name: companySettings.companyName,
+          company_address: companySettings.companyAddress,
+          company_phone: companySettings.companyPhone,
+          company_whatsapp: companySettings.companyWhatsApp,
+          company_email: companySettings.companyEmail,
+          gstin: companySettings.gstin,
+          udyam: companySettings.udyam,
+          offer_title: activeOffer?.title || null,
+          offer_description: activeOffer?.description || null,
+          offer_promo_code: activeOffer?.promo_code || null,
+          offer_valid_until: activeOffer?.valid_until || null,
+          invoice_terms: invoiceData.invoiceTerms,
+        }
+
+        const { error } = await supabase.from('invoices').insert(payload)
+
+        if (!error) {
+          saved = true
+          break
+        }
+
+        // Duplicate invoice_number — retry with new number
+        if (error.code === '23505' && error.message?.includes('invoice_number')) {
+          lastError = error
+          continue
+        }
+
+        // Other error — throw immediately
+        throw error
       }
 
-      const { error } = await supabase.from('invoices').insert(payload)
-      if (error) throw error
+      if (!saved) {
+        throw lastError || new Error('Failed to generate a unique invoice number. Please try again.')
+      }
 
-      toast.success(`Invoice ${invoiceNumber} saved!`)
+      toast.success(`Invoice ${finalInvoiceNumber} saved!`)
 
       if (download) {
         setDownloading(true)
         const { generateInvoicePDF } = await import('@/components/InvoicePDF/generateInvoicePDF')
-        await generateInvoicePDF(invoiceData)
+        await generateInvoicePDF({ ...invoiceData, invoiceNumber: finalInvoiceNumber })
         setDownloading(false)
       }
 
       router.push('/dashboard/invoices')
     } catch (e: any) {
+      console.error('[invoices/new] Save failed:', e)
       toast.error('Save failed: ' + (e.message || 'Unknown error'))
     } finally {
       setSaving(false)
@@ -309,7 +423,7 @@ export default function NewInvoicePage() {
           </Link>
           <div>
             <h1 className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>New Invoice</h1>
-            <p className="text-sm font-mono text-blue-600 font-bold">{invoiceNumber}</p>
+            <p className="text-sm font-mono font-bold" style={{ color: gstApplicable ? '#16a34a' : '#2563eb' }}>{invoiceNumber}</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -358,6 +472,9 @@ export default function NewInvoicePage() {
                         {(b.total_amount || b.fare) && (
                           <span className="text-xs ml-2 font-semibold text-green-600">₹{b.total_amount || b.fare}</span>
                         )}
+                        {b.gst_invoice_required === true && (
+                          <span className="text-xs ml-2 font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded">GST</span>
+                        )}
                       </button>
                     ))}
                   </div>
@@ -368,8 +485,18 @@ export default function NewInvoicePage() {
                   <div>
                     <p className="text-xs font-mono font-bold text-blue-600">{selectedBooking.booking_number}</p>
                     <p className="text-sm font-medium">{selectedBooking.customer_name}</p>
+                    {bookingWantsGst === true && (
+                      <p className="text-xs text-green-700 font-semibold mt-0.5">✓ Customer requested GST invoice — GST has been enabled</p>
+                    )}
+                    {bookingWantsGst === false && (
+                      <p className="text-xs text-slate-500 mt-0.5">Customer did not request GST invoice</p>
+                    )}
                   </div>
-                  <button onClick={() => { setSelectedBooking(null); setBookingSearch('') }} className="text-xs text-red-500">✕ Clear</button>
+                  <button onClick={() => {
+                    setSelectedBooking(null)
+                    setBookingSearch('')
+                    setBookingWantsGst(null)
+                  }} className="text-xs text-red-500">✕ Clear</button>
                 </div>
               )}
             </div>
@@ -476,30 +603,37 @@ export default function NewInvoicePage() {
                 </div>
               )}
 
-              {/* GST */}
-              <div className="flex items-center justify-between p-3 rounded-lg" style={{ background: 'var(--muted)' }}>
-                <div>
-                  <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>Apply GST</p>
-                  <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Disabled by default</p>
+              {/* GST Toggle */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-3 rounded-lg" style={{ background: gstApplicable ? '#f0fdf4' : 'var(--muted)', border: gstApplicable ? '1px solid #bbf7d0' : 'none' }}>
+                  <div>
+                    <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
+                      Apply GST
+                      {gstApplicable && <span className="ml-2 text-xs font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">Invoice: {invoiceNumber}</span>}
+                    </p>
+                    <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                      {gstApplicable ? `GST Invoice series — number starts with SRT-GST-` : `Non-GST Invoice series — number starts with SRT-INV-`}
+                    </p>
+                  </div>
+                  <button onClick={() => setGstApplicable(!gstApplicable)}
+                    className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                    style={{ background: gstApplicable ? '#16a34a' : 'var(--border)' }}>
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${gstApplicable ? 'translate-x-6' : 'translate-x-1'}`} />
+                  </button>
                 </div>
-                <button onClick={() => setGstApplicable(!gstApplicable)}
-                  className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
-                  style={{ background: gstApplicable ? 'var(--primary)' : 'var(--border)' }}>
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${gstApplicable ? 'translate-x-6' : 'translate-x-1'}`} />
-                </button>
-              </div>
 
-              {gstApplicable && (
-                <div>
-                  <label>GST Rate (%)</label>
-                  <select value={gstRate} onChange={e => setGstRate(Number(e.target.value))}>
-                    <option value={5}>5%</option>
-                    <option value={12}>12%</option>
-                    <option value={18}>18% (Standard)</option>
-                    <option value={28}>28%</option>
-                  </select>
-                </div>
-              )}
+                {gstApplicable && (
+                  <div>
+                    <label>GST Rate (%)</label>
+                    <select value={gstRate} onChange={e => setGstRate(Number(e.target.value))}>
+                      <option value={5}>5%</option>
+                      <option value={12}>12%</option>
+                      <option value={18}>18% (Standard)</option>
+                      <option value={28}>28%</option>
+                    </select>
+                  </div>
+                )}
+              </div>
 
               {/* Live calculation */}
               <div className="rounded-lg overflow-hidden" style={{ border: '1px solid var(--border)' }}>
@@ -520,7 +654,7 @@ export default function NewInvoicePage() {
                   </div>
                 )}
                 <div className="flex justify-between px-4 py-3 font-bold text-base"
-                  style={{ background: 'var(--primary)', color: 'white' }}>
+                  style={{ background: gstApplicable ? '#16a34a' : 'var(--primary)', color: 'white' }}>
                   <span>Grand Total</span>
                   <span>{formatCurrency(grandTotal)}</span>
                 </div>
@@ -571,5 +705,18 @@ export default function NewInvoicePage() {
         </div>
       )}
     </div>
+  )
+}
+
+// ─── Default Export — wraps in Suspense for useSearchParams() ─────────────────
+export default function NewInvoicePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex justify-center py-24">
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full spinner" />
+      </div>
+    }>
+      <NewInvoicePageInner />
+    </Suspense>
   )
 }
